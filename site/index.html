@@ -1,0 +1,1232 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>İspanya Yağış Atlası</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<style>
+:root{
+  --bg:#F2F4F4; --ink:#1A2226; --muted:#7B878C; --faint:#A9B3B7; --line:#DCE2E4; --accent:#2E6E9E;
+  --dry:#A0622A; --wet:#1F7A80;
+  --land:#E6E1D6; --rain:#6FA3C4; --mm-zero:#E8DDC4; --ratio-mid:#ECE9E0; --shadow-a:.10;
+  --f-body:"Figtree", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#121819; --ink:#E3E8E9; --muted:#8A979B; --faint:#56646A; --line:#263134; --accent:#7DB8DC;
+    --dry:#D9A06A; --wet:#6CC6C4;
+    --land:#2C3131; --rain:#8DBFDD; --mm-zero:#7D7766; --ratio-mid:#A9A79E; --shadow-a:.35;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121819; --ink:#E3E8E9; --muted:#8A979B; --faint:#56646A; --line:#263134; --accent:#7DB8DC;
+  --dry:#D9A06A; --wet:#6CC6C4;
+  --land:#2C3131; --rain:#8DBFDD; --mm-zero:#7D7766; --ratio-mid:#A9A79E; --shadow-a:.35;
+}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:1.5px solid var(--accent);outline-offset:3px;border-radius:4px}
+.lab{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+
+#app{position:fixed;inset:0;overflow:hidden}
+#stage{position:absolute;inset:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.toprow{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.tg.lang{gap:10px}
+.tg.lang button{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em}
+
+.head{position:absolute;top:28px;left:32px;max-width:340px}
+h1{font-weight:500;font-size:22px;letter-spacing:-.01em;margin:8px 0 6px;line-height:1.2}
+.head p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+
+.tg{display:inline-flex;gap:16px}
+.tg button{font-size:13px;color:var(--muted);padding:2px 0;border-bottom:1.5px solid transparent;transition:color .2s,border-color .2s}
+.tg button:hover{color:var(--ink)}
+.tg button[aria-pressed="true"]{color:var(--ink);border-color:var(--ink)}
+
+.side{position:absolute;top:28px;right:32px;width:220px;display:grid;gap:22px;text-align:right}
+.period{font-size:15px;font-weight:500}
+.period small{display:block;color:var(--muted);font-weight:400;font-size:12px;margin-top:2px}
+.big{font-family:var(--f-mono);font-size:44px;font-weight:400;letter-spacing:-.03em;line-height:1;margin-top:10px}
+.big u{text-decoration:none;font-size:14px;color:var(--muted);margin-left:4px;letter-spacing:0}
+.ratio{margin-top:8px;font-size:13px;color:var(--muted)}
+.ratio b{font-family:var(--f-mono);font-weight:500;color:var(--ink)}
+.ratio b.dry{color:var(--dry)} .ratio b.wet{color:var(--wet)}
+.legend{display:grid;gap:8px;justify-items:end}
+.legend canvas{width:100%;height:6px;border-radius:3px;display:block}
+.ticks{position:relative;height:14px;width:100%;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.ticks span:first-child{transform:none}
+.ticks span:last-child{transform:translateX(-100%)}
+.lnote{font-size:11.5px;line-height:1.45;color:var(--muted);margin-top:2px}
+
+.dock{position:absolute;left:32px;right:32px;bottom:calc(24px + env(safe-area-inset-bottom,0px));display:grid;gap:14px}
+.controls{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.play{width:38px;height:38px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;flex:none;transition:transform .15s}
+.play:hover{transform:scale(1.06)}
+.play svg{width:14px;height:14px}
+.steps{display:flex;gap:4px;margin-left:-12px}
+.steps button{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+.steps button:hover{color:var(--ink)}
+.steps svg{width:10px;height:10px}
+.status{font-size:12.5px;color:var(--muted);margin-left:auto}
+.status b{color:var(--ink);font-weight:500}
+.story-link{font-size:13px;color:var(--ink);border-bottom:1.5px solid var(--ink);padding-bottom:1px}
+
+.timeline{position:relative;padding-top:24px}
+.bars{position:absolute;left:7px;right:7px;top:0;height:20px;display:flex;align-items:flex-end;gap:2px}
+.bars i{flex:1;border-radius:1px;min-height:2px;cursor:pointer;opacity:.7;transition:opacity .2s}
+.bars i:hover,.bars i.cur{opacity:1}
+.bars i.cur{box-shadow:0 -3px 0 -1px var(--ink)}
+.bars .nline{position:absolute;left:0;right:0;border-top:1px dotted var(--faint);pointer-events:none}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;background:transparent;margin:0;display:block}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:linear-gradient(to right,var(--ink) var(--p,0%),var(--line) var(--p,0%))}
+input[type=range]::-moz-range-track{height:2px;background:var(--line)}
+input[type=range]::-moz-range-progress{height:2px;background:var(--ink)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--bg);border:2px solid var(--ink);margin-top:-6px}
+input[type=range]::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:var(--bg);border:2px solid var(--ink)}
+.years{position:relative;height:14px;margin:4px 7px 0;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.years span{position:absolute;transform:translateX(-50%)}
+
+.tip{position:absolute;pointer-events:none;padding:10px 12px;font-size:12px;min-width:160px;transform:translate(16px,-50%);border-radius:8px;z-index:5;background:var(--bg);border:1px solid var(--line)}
+.tip b{font-weight:600;display:block;margin-bottom:4px;font-size:13px}
+.tip .r{display:flex;justify-content:space-between;gap:14px;color:var(--muted)}
+.tip .r span:last-child{color:var(--ink);font-family:var(--f-mono)}
+
+.toast{position:absolute;left:50%;top:24%;transform:translate(-50%,-50%);text-align:center;font-size:20px;font-weight:500;transition:opacity .5s;pointer-events:none}
+.toast small{display:block;font-size:13px;color:var(--muted);font-weight:400;margin-top:4px}
+
+.loader{position:absolute;inset:0;display:grid;place-items:center;background:var(--bg);z-index:20;transition:opacity .6s}
+.loader .box{display:grid;gap:12px;justify-items:center;text-align:center;padding-inline:16px}
+.pbar{width:180px;height:2px;background:var(--line);overflow:hidden}
+.pbar i{display:block;height:100%;width:0;background:var(--ink);transition:width .2s}
+
+/* ---------- story ---------- */
+.story{position:absolute;inset:0;z-index:10;background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
+.story-top{display:flex;align-items:center;gap:20px;padding:calc(24px + env(safe-area-inset-top,0px)) 32px 8px}
+.story-top .lab{margin-right:auto}
+.dots{display:flex;gap:6px}
+.dots button{width:22px;height:2px;background:var(--line);position:relative;overflow:hidden}
+.dots button.on{background:var(--ink)}
+.dots button.cur::after{content:"";position:absolute;inset:0;background:var(--ink);transform-origin:left;animation:fillx var(--dur,14s) linear forwards}
+.dots.paused button.cur::after{animation:none;transform:scaleX(1)}
+@keyframes fillx{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.close{font-size:13px;color:var(--muted)} .close:hover{color:var(--ink)}
+.scenes{flex:1;position:relative;overflow:hidden}
+.scene{position:absolute;inset:0;overflow-y:auto;padding:16px 32px 24px;display:none}
+.scene.on{display:block}
+.scene-in{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:64px;align-items:center;min-height:100%}
+.scene-wide{max-width:1000px;margin:0 auto;padding-block:24px}
+.scene h2{font-weight:500;font-size:clamp(26px,3.4vw,40px);line-height:1.12;letter-spacing:-.02em;margin:12px 0 18px;text-wrap:balance}
+.scene p{font-size:15.5px;line-height:1.6;margin:0 0 12px;max-width:52ch}
+.scene p.m{color:var(--muted);font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 28px;margin-top:22px}
+.kpi{border-top:1px solid var(--line);padding-top:10px}
+.kpi b{display:block;font-family:var(--f-mono);font-size:24px;font-weight:400;letter-spacing:-.02em}
+.kpi span{font-size:12.5px;color:var(--muted);line-height:1.4;display:block;margin-top:2px}
+.story-nav{display:flex;justify-content:space-between;align-items:center;padding:10px 32px calc(24px + env(safe-area-inset-bottom,0px))}
+.nav-btn{font-size:14px;color:var(--muted)} .nav-btn:hover{color:var(--ink)} .nav-btn:disabled{opacity:.3;cursor:default}
+.nav-btn.pri{color:var(--ink);font-weight:500}
+.btn{border-radius:999px;padding:10px 18px;font-size:14px;background:var(--ink);color:var(--bg)}
+.btn.sec{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.src,.src p{font-size:12px;color:var(--muted);line-height:1.6}
+.src b{color:var(--ink);font-weight:500}
+
+.rise{opacity:0;transform:translateY(10px)}
+.scene.on .rise{animation:rise .8s cubic-bezier(.2,.7,.2,1) forwards;animation-delay:var(--d,0s)}
+@keyframes rise{to{opacity:1;transform:none}}
+.chart50 .yb{transform-box:fill-box;transform-origin:bottom;transform:scaleY(0)}
+.scene.on .chart50 .yb{animation:grow .7s cubic-bezier(.2,.7,.2,1) forwards;animation-delay:calc(var(--i) * 25ms + .2s)}
+@keyframes grow{to{transform:scaleY(1)}}
+.chart50 .trend{stroke-dasharray:1000;stroke-dashoffset:1000}
+.scene.on .chart50 .trend{animation:draw 1.4s ease forwards 1.8s}
+@keyframes draw{to{stroke-dashoffset:0}}
+.chart50 text{fill:var(--muted);font-family:var(--f-mono);font-size:10.5px}
+
+.use{display:grid;gap:18px}
+.use .row{display:grid;grid-template-columns:130px 1fr 44px;align-items:center;gap:14px;font-size:14px}
+.use .trk{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.use .fill{height:100%;width:0;border-radius:3px;background:var(--accent)}
+.scene.on .use .fill{animation:wid 1.4s cubic-bezier(.2,.7,.2,1) forwards;animation-delay:var(--d)}
+@keyframes wid{to{width:var(--w)}}
+.use .pc{font-family:var(--f-mono);text-align:right;color:var(--muted)}
+.glass-wrap{display:flex;gap:24px;align-items:center;margin-top:40px}
+.glass{width:64px;flex:none}
+.glass .water{transform:translateY(100%)}
+.scene.on .glass .water{animation:fillup 2.4s cubic-bezier(.3,.6,.2,1) forwards .6s}
+@keyframes fillup{to{transform:translateY(10%)}}
+.wave{animation:wave 2.4s linear infinite}
+@keyframes wave{to{transform:translateX(-50px)}}
+.result{font-family:var(--f-mono);font-size:clamp(30px,3.6vw,42px);font-weight:400;letter-spacing:-.03em;line-height:1}
+.result small{display:block;font-family:var(--f-body);font-size:13.5px;color:var(--muted);margin-top:10px;letter-spacing:0;line-height:1.5}
+
+.dam svg{width:100%;height:auto;display:block}
+.stat-list{display:grid;margin-top:8px}
+.stat-list div{display:grid;grid-template-columns:72px 1fr;gap:16px;align-items:baseline;padding:12px 0;border-top:1px solid var(--line)}
+.stat-list b{font-family:var(--f-mono);font-size:18px;font-weight:400;color:var(--dry)}
+.stat-list span{font-size:14px;line-height:1.5}
+
+.sols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px 36px;margin-top:8px}
+.sol{border-top:1px solid var(--line);padding-top:14px}
+.sol h4{margin:0 0 6px;font-size:15px;font-weight:600}
+.sol p{font-size:13px;line-height:1.55;margin:0;color:var(--muted)}
+.sol .n{font-family:var(--f-mono);font-size:11px;color:var(--faint);display:block;margin-bottom:8px}
+
+.calc{display:grid;gap:18px}
+.calc label{display:grid;gap:8px;font-size:14px}
+.calc .lr{display:flex;justify-content:space-between;gap:8px}
+.calc .lr span:last-child{font-family:var(--f-mono)}
+.calc .tog{display:flex;align-items:center;gap:10px}
+.calc .tog input{width:16px;height:16px;accent-color:var(--ink)}
+.calc .result{margin-top:10px;padding-top:18px;border-top:1px solid var(--line)}
+
+@media (max-width:760px){
+  .head{top:18px;left:16px;right:16px;max-width:none}
+  .head p{display:none}
+  h1{font-size:18px}
+  .side{top:auto;left:16px;right:16px;width:auto;bottom:calc(var(--dock-h,120px) + 36px);text-align:left;gap:12px;grid-template-columns:1fr auto;align-items:end}
+  .side .legend{width:150px}
+  .big{font-size:30px;margin-top:6px}
+  .dock{left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));gap:10px}
+  .controls{gap:14px}
+  .status{display:none}
+  .scene{padding-inline:16px}
+  .story-top,.story-nav{padding-inline:16px}
+  .scene-in{grid-template-columns:1fr;gap:24px}
+  .sols{grid-template-columns:1fr;gap:18px}
+  .use .row{grid-template-columns:96px 1fr 40px}
+  .dots button{width:12px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition:none!important}
+}
+</style>
+
+<div id="app">
+  <div id="stage" data-i18n-aria="ariaStage"></div>
+
+  <header class="head">
+    <div class="toprow"><span class="lab" data-i18n="eyebrow"></span>
+      <div class="tg lang" role="group" aria-label="Language">
+        <button data-lang="tr" aria-pressed="false">TR</button><button data-lang="en" aria-pressed="false">EN</button><button data-lang="es" aria-pressed="false">ES</button>
+      </div></div>
+    <h1 data-i18n="title"></h1>
+    <p data-i18n="lede"></p>
+  </header>
+
+  <aside class="side" aria-live="polite">
+    <div>
+      <div class="period" id="c-period">—</div>
+      <div class="big" id="c-mm">—</div>
+      <div class="ratio" id="c-ratio"></div>
+    </div>
+    <div class="legend">
+      <div class="tg" role="group" data-i18n-aria="ariaMetric">
+        <button id="m-mm" aria-pressed="true" data-i18n="mAmount"></button>
+        <button id="m-ratio" aria-pressed="false" data-i18n="mRatio"></button>
+      </div>
+      <canvas id="lg" width="440" height="12"></canvas>
+      <div class="ticks" id="lg-ticks"></div>
+      <div class="lnote" data-i18n="normalNote"></div>
+    </div>
+  </aside>
+
+  <div class="dock">
+    <div class="controls">
+      <button class="play" id="play" data-i18n-aria="play"><svg viewBox="0 0 20 20" id="play-ico"><path d="M5 3.5v13l11-6.5z" fill="currentColor"/></svg></button>
+      <div class="steps">
+        <button id="prev" data-i18n-aria="prev"><svg viewBox="0 0 12 12"><path d="M8 1 3 6l5 5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></button>
+        <button id="next" data-i18n-aria="next"><svg viewBox="0 0 12 12"><path d="m4 1 5 5-5 5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></button>
+      </div>
+      <div class="tg" role="group" data-i18n-aria="ariaStep">
+        <button data-g="day" aria-pressed="false" data-i18n="gDay"></button>
+        <button data-g="week" aria-pressed="false" data-i18n="gWeek"></button>
+        <button data-g="month" aria-pressed="false" data-i18n="gMonth"></button>
+        <button data-g="year" aria-pressed="true" data-i18n="gYear"></button>
+      </div>
+      <div class="tg" role="group" data-i18n-aria="ariaSpeed">
+        <button data-s="1" aria-pressed="true">1×</button>
+        <button data-s="4" aria-pressed="false">4×</button>
+        <button data-s="16" aria-pressed="false">16×</button>
+      </div>
+      <span class="status" id="status"></span>
+      <button class="story-link" id="open-story" data-i18n="storyLink"></button>
+    </div>
+    <div class="timeline">
+      <div class="bars" id="bars"></div>
+      <input type="range" id="slider" min="0" max="1" step="1" value="0" data-i18n-aria="ariaTime">
+      <div class="years" id="years"></div>
+    </div>
+  </div>
+
+  <div class="tip" id="tip" hidden></div>
+  <div class="toast" id="toast" hidden></div>
+
+  <div class="loader" id="loader">
+    <div class="box">
+      <div class="lab" data-i18n="loading"></div>
+      <div class="pbar"><i id="pbar"></i></div>
+      <div class="lab" id="ptext" style="text-transform:none;letter-spacing:0" data-i18n="loadingSub"></div>
+    </div>
+  </div>
+
+  <section class="story" id="story" hidden data-i18n-aria="ariaStory">
+    <div class="story-top">
+      <span class="lab" data-i18n="storyTop"></span>
+      <div class="dots" id="dots"></div>
+      <button class="close" id="close-story" data-i18n="close"></button>
+    </div>
+    <div class="scenes" id="scenes">
+
+      <article class="scene">
+        <div class="scene-in">
+          <div>
+            <div class="lab rise" data-i18n="s1lab"></div>
+            <h2 class="rise" style="--d:.1s" id="s1-h"></h2>
+            <p class="rise" style="--d:.25s" id="s1-a"></p>
+            <p class="rise" style="--d:.4s" id="s1-b"></p>
+            <div class="kpis">
+              <div class="kpi rise" style="--d:.55s"><b id="k-normal">—</b><span data-i18n="kNormal"></span></div>
+              <div class="kpi rise" style="--d:.65s"><b id="k-trend">—</b><span data-i18n="kTrend"></span></div>
+              <div class="kpi rise" style="--d:.75s"><b id="k-dry">—</b><span data-i18n="kDry"></span></div>
+              <div class="kpi rise" style="--d:.85s"><b id="k-ytd">—</b><span id="k-ytd-l"></span></div>
+            </div>
+          </div>
+          <div class="rise" style="--d:.15s">
+            <svg class="chart50" id="chart50" viewBox="0 0 560 300" role="img" data-i18n-aria="chartAria"></svg>
+            <p class="m" data-i18n="chartNote"></p>
+          </div>
+        </div>
+      </article>
+
+      <article class="scene">
+        <div class="scene-in">
+          <div>
+            <div class="lab rise" data-i18n="s2lab"></div>
+            <h2 class="rise" style="--d:.1s" data-i18n="s2h"></h2>
+            <p class="rise" style="--d:.25s" data-i18n="s2p1"></p>
+            <p class="rise m" style="--d:.4s" data-i18n="s2p2"></p>
+          </div>
+          <div>
+            <div class="use">
+              <div class="row rise" style="--d:.2s"><span data-i18n="uAgri"></span><div class="trk"><div class="fill" style="--w:80%;--d:.4s"></div></div><span class="pc" data-i18n="u80"></span></div>
+              <div class="row rise" style="--d:.3s"><span data-i18n="uUrban"></span><div class="trk"><div class="fill" style="--w:15%;--d:.6s"></div></div><span class="pc" data-i18n="u15"></span></div>
+              <div class="row rise" style="--d:.4s"><span data-i18n="uInd"></span><div class="trk"><div class="fill" style="--w:5%;--d:.8s"></div></div><span class="pc" data-i18n="u5"></span></div>
+            </div>
+            <div class="glass-wrap rise" style="--d:.9s">
+              <svg class="glass" viewBox="0 0 92 120" aria-hidden="true">
+                <defs><clipPath id="gclip"><path d="M10 6h72l-8 106a6 6 0 0 1-6 5H24a6 6 0 0 1-6-5z"/></clipPath></defs>
+                <g clip-path="url(#gclip)"><g class="water"><path class="wave" d="M0 8 q12.5 -6 25 0 t25 0 t25 0 t25 0 t25 0 t25 0 V130 H0z" fill="var(--rain)" opacity=".8"/></g></g>
+                <path d="M10 6h72l-8 106a6 6 0 0 1-6 5H24a6 6 0 0 1-6-5z" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+              <div class="result"><span id="lit">133</span> L<small data-i18n="glass"></small></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="scene">
+        <div class="scene-in">
+          <div class="dam rise" style="--d:.1s">
+            <svg viewBox="0 0 420 250" role="img" data-i18n-aria="damAria">
+              <clipPath id="vclip"><path d="M20 50 C 90 60, 110 220, 210 222 C 310 220, 330 60, 400 50 Z"/></clipPath>
+              <g clip-path="url(#vclip)"><rect id="dam-water" x="0" y="100" width="420" height="200" fill="var(--rain)" opacity=".75"/></g>
+              <path d="M20 50 C 90 60, 110 220, 210 222 C 310 220, 330 60, 400 50" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+              <line x1="20" x2="400" y1="50" y2="50" stroke="var(--faint)" stroke-dasharray="3 4"/>
+              <text x="400" y="40" text-anchor="end" style="font-family:var(--f-mono);font-size:10.5px;fill:var(--muted)" data-i18n="damFull"></text>
+              <text x="20" y="40" style="font-family:var(--f-mono);font-size:10.5px;fill:var(--muted)" data-i18n="damCap"></text>
+              <text id="dam-pct" x="210" y="140" text-anchor="middle" style="font-family:var(--f-mono);font-size:44px;fill:var(--ink)"></text>
+            </svg>
+          </div>
+          <div>
+            <div class="lab rise" data-i18n="s3lab"></div>
+            <h2 class="rise" style="--d:.1s" data-i18n="s3h"></h2>
+            <p class="rise" style="--d:.25s" data-i18n="s3p"></p>
+            <div class="stat-list">
+              <div class="rise" style="--d:.4s"><b data-i18n="f1n"></b><span data-i18n="f1"></span></div>
+              <div class="rise" style="--d:.55s"><b data-i18n="f2n"></b><span data-i18n="f2"></span></div>
+              <div class="rise" style="--d:.7s"><b data-i18n="f3n"></b><span data-i18n="f3"></span></div>
+              <div class="rise" style="--d:.85s"><b>↓</b><span data-i18n="f4"></span></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="scene">
+        <div class="scene-wide">
+          <div class="lab rise" data-i18n="s4lab"></div>
+          <h2 class="rise" style="--d:.1s" data-i18n="s4h"></h2>
+          <div class="sols">
+            <div class="sol rise" style="--d:.2s"><span class="n">01</span><h4 data-i18n="o1h"></h4><p data-i18n="o1"></p></div>
+            <div class="sol rise" style="--d:.3s"><span class="n">02</span><h4 data-i18n="o2h"></h4><p data-i18n="o2"></p></div>
+            <div class="sol rise" style="--d:.4s"><span class="n">03</span><h4 data-i18n="o3h"></h4><p data-i18n="o3"></p></div>
+            <div class="sol rise" style="--d:.5s"><span class="n">04</span><h4 data-i18n="o4h"></h4><p data-i18n="o4"></p></div>
+            <div class="sol rise" style="--d:.6s"><span class="n">05</span><h4 data-i18n="o5h"></h4><p data-i18n="o5"></p></div>
+            <div class="sol rise" style="--d:.7s"><span class="n">06</span><h4 data-i18n="o6h"></h4><p data-i18n="o6"></p></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="scene">
+        <div class="scene-in">
+          <div>
+            <div class="lab rise" data-i18n="s5lab"></div>
+            <h2 class="rise" style="--d:.1s" data-i18n="s5h"></h2>
+            <p class="rise" style="--d:.25s" data-i18n="s5p"></p>
+            <p class="src rise" style="--d:.4s" data-i18n="s5ass"></p>
+          </div>
+          <div class="calc rise" style="--d:.2s">
+            <label for="c-shower"><span class="lr"><span data-i18n="cShower"></span><span id="c-shower-v"></span></span>
+              <input type="range" id="c-shower" min="0" max="6" step="1" value="2"></label>
+            <label class="tog" for="c-tap"><input type="checkbox" id="c-tap" checked> <span data-i18n="cTap"></span></label>
+            <label class="tog" for="c-full"><input type="checkbox" id="c-full"> <span data-i18n="cFull"></span></label>
+            <div class="result" id="c-res">—</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="scene">
+        <div class="scene-in">
+          <div>
+            <div class="lab rise" data-i18n="s6lab"></div>
+            <h2 class="rise" style="--d:.1s" data-i18n="s6h"></h2>
+            <p class="rise" style="--d:.2s" data-i18n="s6p"></p>
+            <div class="rise" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;--d:.3s">
+              <button class="btn" id="replay" data-i18n="replay"></button>
+              <button class="btn sec" id="back-map" data-i18n="toMap"></button>
+            </div>
+          </div>
+          <div class="src rise" style="--d:.3s">
+            <p data-i18n="src1"></p>
+            <p data-i18n="src2"></p>
+            <p data-i18n="src3"></p>
+            <p data-i18n="src4"></p>
+          </div>
+        </div>
+      </article>
+
+    </div>
+    <div class="story-nav">
+      <button class="nav-btn" id="s-prev" data-i18n="back"></button>
+      <button class="nav-btn pri" id="s-next"></button>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DAY = 864e5;
+
+/* ---------------- i18n: Türkçe · English · Español ---------------- */
+const LOCALE = {tr:'tr-TR', en:'en-GB', es:'es-ES'};
+const I18N = {
+tr: {
+  docTitle:'İspanya Yağış Atlası', ariaStage:'İspanya üzerinde yağışı gösteren 3B yüzey',
+  eyebrow:'COPERNICUS ERA5 · 1976 — bugün', title:"İspanya'nın 50 yıllık yağmuru",
+  lede:'Tepeler yağış miktarını, renkler seçilen ölçüyü gösterir. Sürükleyerek çevir, üzerine gelerek oku.',
+  ariaMetric:'Renk ölçüsü', mAmount:'Miktar', mRatio:'Normale oran',
+  play:'Oynat', pause:'Duraklat', prev:'Önceki dönem', next:'Sonraki dönem', ariaStep:'Zaman adımı', ariaSpeed:'Oynatma hızı', ariaTime:'Zaman',
+  gDay:'Gün', gWeek:'Hafta', gMonth:'Ay', gYear:'Yıl', gran:{day:'günlük',week:'haftalık',month:'aylık',year:'yıllık'},
+  storyLink:'Su hikâyesi →', loading:'ERA5 verisi yükleniyor', loadingSub:'50 yıllık günlük yağış · ~7 MB',
+  loadErr: m => `Veri yüklenemedi: ${m}. Sayfayı bir web sunucusu üzerinden aç.`,
+  pct: n => `%${n}`,
+  yearTotal:'Yıllık toplam', ytd: d => `Yıl başından ${d} tarihine kadar`, monthTotal:'Aylık toplam', monthUntil: d => `Aylık toplam · ${d} tarihine kadar`,
+  weekTotal:'Haftalık toplam', dayTotal:'Günlük toplam · oran son 30 güne göre',
+  ofNormal: b => `Normalin ${b}`, normal:'normal',
+  normalNote:'<b>Normal</b>: aynı gün ve haftaların 1991–2020 ortalaması (30 yıllık iklim normali).',
+  statusPlay: (a,b,g) => `<b>${a} → ${b}</b> · ${g}`, statusIdle: y => `▶ <b>${y}</b> → bugün`,
+  barTitle: (y,mm,p,part) => `${y}: ${mm} mm (normalin ${p})${part ? ' · yıl devam ediyor' : ''}`,
+  tipRain:'Yağış', tipNormal:'Normal', tipRatio:'Normale oran', tip30:' (30 g)',
+  reached:'Bugüne ulaştık', dataEnds: l => `${l} · veri burada bitiyor`,
+  pickYear:'Bir yıl seç, ▶ ile oynat', pickYearSub:'Zaman çizelgesindeki çubuklara tıklayabilirsin',
+  storyTop:'Veri bugüne ulaştı', close:'Haritaya dön ✕', back:'← Geri', fwd:'İleri →', toMap:'Haritaya dön', ariaStory:'Su hikâyesi', scene: n => `Sahne ${n}`,
+  s1lab:'01 · 50 yılın özeti',
+  s1h: tr => tr <= -8 ? '50 yılda yağmur azaldı, kurak yıllar sıklaştı' : tr >= 8 ? 'Yağmur azalmadı, ama su yine de azalıyor' : 'Yağmur aşağı yukarı aynı, ama su azalıyor',
+  s1a: (n, dy, dm, wy, wm) => `ERA5'e göre İspanya'ya ortalamada yılda ${n} mm yağmur düşüyor. Ama yıllar arasındaki fark çok büyük: en kurak yıl ${dy} (${dm} mm), en yağışlı yıl ${wy} (${wm} mm).`,
+  s1b: (a0,a1,am,b0,b1,bm,d) => `${a0}–${a1} ortalaması ${am} mm, ${b0}–${b1} ortalaması ${bm} mm (${d} mm). Asıl sorun toplam miktar değil. Kurak yıllar art arda geldiğinde barajlar toparlanamıyor, üstelik ısınan havada buharlaşma artıyor.`,
+  kNormal:'Yıllık normal (1991–2020)', kTrend:'Doğrusal eğilim, her 10 yılda', kDry:'En kurak 10 yıldan 2000 sonrasına düşenler',
+  kYtd: (y,d) => `${y} yağışı, ${d} tarihine kadar, normale oranla`, kYear: y => `${y} toplam yağış`,
+  chartAria:'İspanya yıllık yağış toplamları', chartNote:'Tüm İspanya ortalama yıllık yağış (ERA5). Noktalı çizgi 1991–2020 normali, koyu çizgi doğrusal eğilim.',
+  chartPartial:' (yıl devam ediyor)',
+  s2lab:'02 · Su nereye gidiyor?', s2h:"Her 10 damladan 8'i tarlaya gidiyor",
+  s2p1:"İspanya, AB'deki en geniş sulanan tarım alanına sahip (~3,8 milyon hektar). Meyve, sebze ve zeytin ihracatı bu suyla büyüyor. Yani İspanya'nın suyu Avrupa'nın sofrasına da gidiyor.",
+  s2p2:'Ülkede ~1.200 büyük baraj ve ~56.000 hm³ depolama kapasitesi var. Ama yağmur yağmazsa barajlar da dolmuyor.',
+  uAgri:'Tarım (sulama)', uUrban:'Kentsel &amp; evsel', uInd:'Sanayi &amp; diğer', u80:'~%80', u15:'~%15', u5:'~%5',
+  glass:'Bir kişinin evde bir günde kullandığı su (İspanya ortalaması, INE). Yaklaşık 89 büyük pet şişe eder.',
+  damAria:'Baraj doluluk animasyonu', damFull:'tam dolu', damCap:'Katalonya iç havzaları · Şubat 2024',
+  s3lab:'03 · Gelecek', s3h:'Daha sıcak bir İspanya: aynı yağmurdan daha az su',
+  s3p:'Sıcaklık arttıkça toprak ve barajlardan buharlaşma da artıyor. Yağış aynı kalsa bile nehirlere ve akiferlere ulaşan su azalıyor.',
+  f1n:'%16', f1:"Barselona'yı besleyen barajların Şubat 2024'teki doluluğu. Bölgede kuraklık acil durumu ilan edildi.",
+  f2n:'−%24', f2:'Yüksek emisyon senaryosunda yüzyıl sonuna nehir akışlarında öngörülen ortalama azalma (CEDEX, 2017).',
+  f3n:'+%20', f3:'Akdeniz havzası küresel ortalamadan yaklaşık %20 daha hızlı ısınıyor (MedECC, 2020).',
+  f4:'Aşırı yeraltı suyu çekimi Doñana gibi sulak alanları kurutuyor. Kuraklıkların daha sık ve daha uzun olması bekleniyor (IPCC AR6).',
+  s4lab:'04 · Nasıl çözebiliriz?', s4h:'Daha fazla su bulmak değil, suyu daha akıllı kullanmak',
+  o1h:'Akıllı sulama', o1:"Damla sulama, nem sensörleri ve uydu verisiyle aynı ürün daha az suyla yetişir. Suyun %80'i tarımda kullanıldığı için en büyük kazanç burada. Yeter ki tasarruf edilen su yeni sulama alanına gitmesin.",
+  o2h:'Suyu yeniden kullan', o2:"İspanya arıtılmış atık suyunun yalnızca ~%10'unu yeniden kullanıyor. İsrail'de bu oran %85'in üzerinde.",
+  o3h:'Güneşle tuzdan arındırma', o3:"Avrupa'nın en büyük kapasitesi (~5 milyon m³/gün) zaten İspanya'da. Güneş ve rüzgârla beslenirse kıyı kentleri için güvence olur.",
+  o4h:'Sızıntıları kapat', o4:"Kent şebekelerinde suyun yaklaşık %15–20'si yolda kayboluyor. Akıllı sayaç ve basınç yönetimiyle bu kayıp hızla azaltılabilir.",
+  o5h:'Akiferleri koru', o5:"Kaçak kuyuları kapat, yeraltı suyunu kuraklık yedeği olarak sakla. Doñana'nın geleceği buna bağlı.",
+  o6h:'Doğayla birlikte', o6:'Orman ve sulak alan restorasyonu yağmuru toprakta tutar. Geçirgen kent yüzeyleri ve yağmur suyu hasadı hem taşkını hem kuraklığı yumuşatır.',
+  s5lab:'05 · Senin payın', s5h:'Küçük alışkanlıklar, 49 milyon kişiyle çarpılınca büyür',
+  s5p:'Evsel tüketim toplam suyun küçük bir parçası. Ama kuraklıkta kentleri ayakta tutan tam da bu su.',
+  s5ass:'Varsayımlar: duş 9 L/dk, musluk 6 L/dk (günde 2 kez 2 dk diş fırçalama), yarım dolu yerine tam dolu makine ~15 L/gün, kişi başı evsel kullanım ~133 L/gün, nüfus ~49 milyon.',
+  cShower:'Duşu kısaltırım', min: n => `${n} dk`, cTap:'Diş fırçalarken musluğu kapatırım', cFull:'Çamaşır ve bulaşık makinesini tam dolu çalıştırırım',
+  cRes: (d, y, p, h, x) => `${d} L/gün<small>Yılda ~${y} litre, yani günlük evsel kullanımın %${p}'i. Herkes yapsa yılda ~${h} hm³ su kazanılır. Bu, Torrevieja tuzdan arındırma tesisinin yıllık kapasitesinin (~80 hm³) ${x} katı.</small>`,
+  s6lab:'Kaynaklar &amp; yöntem', s6h:'Veriye bir kez daha bak',
+  s6p:"Tüm yağış değerleri ERA5 yeniden analizinden (Copernicus İklim Değişikliği Servisi, ECMWF) alındı. Saatlik toplam yağış günlük toplamlara çevrildi. Yarımada 0,5°'lik, adalar 0,25°'lik hücrelerle gösterildi; Balear Adaları 1,6 kat büyütüldü. Normal dönem 1991–2020. Yüzey, hücreler arasında yumuşatılarak çizildi. ERA5 bir model yeniden analizi olduğu için yerel istasyon ölçümlerinden, özellikle şiddetli sağanaklarda, farklı olabilir.",
+  replay:'Başka bir yıldan oynat',
+  src1:"<b>İklim verisi</b> · Hersbach vd. (2020), ERA5 hourly data on single levels, C3S Climate Data Store. Veri, Open-Meteo'nun açık S3 aynası üzerinden alındı. Contains modified Copernicus Climate Change Service information <span class=\"yr-now\"></span>.",
+  src2:'<b>Su kullanımı</b> · INE, Encuesta sobre el suministro y saneamiento del agua; MITECO (sulanan alan, barajlar, yeniden kullanım); AEDyR (tuzdan arındırma).',
+  src3:'<b>Gelecek</b> · CEDEX (2017); MedECC (2020) MAR1; IPCC AR6 Akdeniz bölümü; ACA / Generalitat de Catalunya kuraklık ilanı (Şubat 2024).',
+  src4:'Oranlar yuvarlanmış yaklaşık değerlerdir ve kaynağa ya da yıla göre değişebilir.',
+  regions:{'Castilla-Leon':'Castilla y León','Cataluña':'Katalonya','Murcia':'Murcia','La Rioja':'La Rioja','Baleares':'Balear Adaları','Canarias':'Kanarya Adaları',
+    'Cantabria':'Kantabria','Andalucia':'Endülüs','Asturias':'Asturias','Valencia':'Valensiya','Navarra':'Navarra','Galicia':'Galiçya',
+    'Aragon':'Aragon','Madrid':'Madrid','Extremadura':'Extremadura','Castilla-La Mancha':'Castilla-La Mancha','Pais Vasco':'Bask Ülkesi'},
+},
+en: {
+  docTitle:'Spain Rainfall Atlas', ariaStage:'3D surface showing rainfall over Spain',
+  eyebrow:'COPERNICUS ERA5 · 1976 — today', title:"50 years of rain in Spain",
+  lede:'The hills show how much it rained; colour shows the selected measure. Drag to rotate, hover to read.',
+  ariaMetric:'Colour measure', mAmount:'Amount', mRatio:'vs. normal',
+  play:'Play', pause:'Pause', prev:'Previous period', next:'Next period', ariaStep:'Time step', ariaSpeed:'Playback speed', ariaTime:'Time',
+  gDay:'Day', gWeek:'Week', gMonth:'Month', gYear:'Year', gran:{day:'daily',week:'weekly',month:'monthly',year:'yearly'},
+  storyLink:'The water story →', loading:'Loading ERA5 data', loadingSub:'50 years of daily rainfall · ~7 MB',
+  loadErr: m => `Could not load data: ${m}. Open the page through a web server.`,
+  pct: n => `${n}%`,
+  yearTotal:'Annual total', ytd: d => `Year to date · until ${d}`, monthTotal:'Monthly total', monthUntil: d => `Monthly total · until ${d}`,
+  weekTotal:'Weekly total', dayTotal:'Daily total · ratio over the last 30 days',
+  ofNormal: b => `${b} of normal`, normal:'normal',
+  normalNote:'<b>Normal</b>: the 1991–2020 average for the same days of the year (30-year climate normal).',
+  statusPlay: (a,b,g) => `<b>${a} → ${b}</b> · ${g}`, statusIdle: y => `▶ <b>${y}</b> → today`,
+  barTitle: (y,mm,p,part) => `${y}: ${mm} mm (${p} of normal)${part ? ' · year in progress' : ''}`,
+  tipRain:'Rainfall', tipNormal:'Normal', tipRatio:'vs. normal', tip30:' (30 d)',
+  reached:'We have reached today', dataEnds: l => `${l} · the data ends here`,
+  pickYear:'Pick a year, then press ▶', pickYearSub:'You can click the bars on the timeline',
+  storyTop:'The data has reached today', close:'Back to map ✕', back:'← Back', fwd:'Next →', toMap:'Back to map', ariaStory:'The water story', scene: n => `Scene ${n}`,
+  s1lab:'01 · Fifty years at a glance',
+  s1h: tr => tr <= -8 ? 'Over 50 years rainfall has dropped and dry years come more often' : tr >= 8 ? 'Rainfall has not dropped, yet water is still shrinking' : 'About the same rain, but less water',
+  s1a: (n, dy, dm, wy, wm) => `According to ERA5, Spain receives ${n} mm of rain in an average year. But years differ enormously: the driest was ${dy} (${dm} mm), the wettest ${wy} (${wm} mm).`,
+  s1b: (a0,a1,am,b0,b1,bm,d) => `The ${a0}–${a1} average was ${am} mm; ${b0}–${b1} averaged ${bm} mm (${d} mm). The real problem is not the total. When dry years come back to back, reservoirs cannot recover, and a warmer atmosphere evaporates more.`,
+  kNormal:'Annual normal (1991–2020)', kTrend:'Linear trend per decade', kDry:'Of the 10 driest years, those after 2000',
+  kYtd: (y,d) => `${y} rainfall to ${d}, vs. normal`, kYear: y => `${y} total rainfall`,
+  chartAria:'Annual rainfall totals for Spain', chartNote:'Spain-wide average annual rainfall (ERA5). Dotted line: 1991–2020 normal; dark line: linear trend.',
+  chartPartial:' (year in progress)',
+  s2lab:'02 · Where does the water go?', s2h:'8 of every 10 drops go to the fields',
+  s2p1:"Spain has the largest irrigated farmland in the EU (~3.8 million hectares). Its fruit, vegetable and olive exports grow on this water, so Spain's water also ends up on Europe's tables.",
+  s2p2:'The country has ~1,200 large dams and ~56,000 hm³ of storage. But when it does not rain, reservoirs do not fill.',
+  uAgri:'Agriculture (irrigation)', uUrban:'Urban &amp; household', uInd:'Industry &amp; other', u80:'~80%', u15:'~15%', u5:'~5%',
+  glass:'Water one person uses at home per day (Spanish average, INE). About 89 large plastic bottles.',
+  damAria:'Reservoir level animation', damFull:'full', damCap:'Catalonia internal basins · Feb 2024',
+  s3lab:'03 · The future', s3h:'A hotter Spain: less water from the same rain',
+  s3p:'As temperatures rise, more water evaporates from soil and reservoirs. Even if rainfall stays the same, less reaches rivers and aquifers.',
+  f1n:'16%', f1:'Level of the reservoirs supplying Barcelona in February 2024, when a drought emergency was declared.',
+  f2n:'−24%', f2:'Projected average drop in river flows by the end of the century under a high-emission scenario (CEDEX, 2017).',
+  f3n:'+20%', f3:'The Mediterranean basin is warming about 20% faster than the global average (MedECC, 2020).',
+  f4:'Over-pumping of groundwater is drying out wetlands such as Doñana. Droughts are expected to become more frequent and longer (IPCC AR6).',
+  s4lab:'04 · How can we fix it?', s4h:'Not finding more water, but using it more wisely',
+  o1h:'Smart irrigation', o1:'Drip irrigation, soil-moisture sensors and satellite data grow the same crop with less water. With 80% of water going to farming, this is the biggest lever, as long as saved water does not go to new irrigated land.',
+  o2h:'Reuse water', o2:'Spain reuses only ~10% of its treated wastewater. In Israel the figure is above 85%.',
+  o3h:'Solar-powered desalination', o3:"Europe's largest capacity (~5 million m³/day) is already in Spain. Powered by sun and wind, it can secure coastal cities.",
+  o4h:'Fix the leaks', o4:'Around 15–20% of water is lost in urban networks. Smart meters and pressure management cut this quickly.',
+  o5h:'Protect aquifers', o5:"Close illegal wells and keep groundwater as a drought reserve. Doñana's future depends on it.",
+  o6h:'Work with nature', o6:'Restoring forests and wetlands keeps rain in the ground. Permeable city surfaces and rainwater harvesting soften both floods and droughts.',
+  s5lab:'05 · Your share', s5h:'Small habits grow when multiplied by 49 million people',
+  s5p:'Household use is a small slice of total water. But in a drought, it is exactly this water that keeps cities running.',
+  s5ass:'Assumptions: shower 9 L/min, tap 6 L/min (brushing teeth 2 min twice a day), full instead of half-full machine loads ~15 L/day, household use ~133 L per person per day, population ~49 million.',
+  cShower:'I shorten my shower by', min: n => `${n} min`, cTap:'I turn off the tap while brushing my teeth', cFull:'I only run full washing-machine and dishwasher loads',
+  cRes: (d, y, p, h, x) => `${d} L/day<small>~${y} litres a year, ${p}% of daily household use. If everyone did it: ~${h} hm³ a year, ${x}× the annual capacity of the Torrevieja desalination plant (~80 hm³).</small>`,
+  s6lab:'Sources &amp; method', s6h:'Look at the data once more',
+  s6p:'All rainfall values come from the ERA5 reanalysis (Copernicus Climate Change Service, ECMWF). Hourly total precipitation was summed into daily totals. The peninsula is shown in 0.5° cells, the islands in 0.25° cells; the Balearic Islands are enlarged 1.6×. Normal period 1991–2020. The surface is smoothed between cells. As a model reanalysis, ERA5 can differ from local station measurements, especially in intense downpours.',
+  replay:'Play from another year',
+  src1:'<b>Climate data</b> · Hersbach et al. (2020), ERA5 hourly data on single levels, C3S Climate Data Store, accessed via the Open-Meteo public S3 mirror. Contains modified Copernicus Climate Change Service information <span class="yr-now"></span>.',
+  src2:'<b>Water use</b> · INE, Encuesta sobre el suministro y saneamiento del agua; MITECO (irrigated area, reservoirs, reuse); AEDyR (desalination).',
+  src3:'<b>Future</b> · CEDEX (2017); MedECC (2020) MAR1; IPCC AR6 Mediterranean chapter; ACA / Generalitat de Catalunya drought declaration (February 2024).',
+  src4:'Figures are rounded approximations and vary by source and year.',
+  regions:{'Castilla-Leon':'Castile and León','Cataluña':'Catalonia','Murcia':'Murcia','La Rioja':'La Rioja','Baleares':'Balearic Islands','Canarias':'Canary Islands',
+    'Cantabria':'Cantabria','Andalucia':'Andalusia','Asturias':'Asturias','Valencia':'Valencia','Navarra':'Navarre','Galicia':'Galicia',
+    'Aragon':'Aragon','Madrid':'Madrid','Extremadura':'Extremadura','Castilla-La Mancha':'Castilla-La Mancha','Pais Vasco':'Basque Country'},
+},
+es: {
+  docTitle:'Atlas de la lluvia en España', ariaStage:'Superficie 3D que muestra la lluvia sobre España',
+  eyebrow:'COPERNICUS ERA5 · 1976 — hoy', title:'50 años de lluvia en España',
+  lede:'Las colinas muestran cuánto llovió; el color, la medida elegida. Arrastra para girar, pasa el cursor para leer.',
+  ariaMetric:'Medida del color', mAmount:'Cantidad', mRatio:'Frente a lo normal',
+  play:'Reproducir', pause:'Pausa', prev:'Periodo anterior', next:'Periodo siguiente', ariaStep:'Paso de tiempo', ariaSpeed:'Velocidad', ariaTime:'Tiempo',
+  gDay:'Día', gWeek:'Semana', gMonth:'Mes', gYear:'Año', gran:{day:'diario',week:'semanal',month:'mensual',year:'anual'},
+  storyLink:'La historia del agua →', loading:'Cargando datos ERA5', loadingSub:'50 años de lluvia diaria · ~7 MB',
+  loadErr: m => `No se pudieron cargar los datos: ${m}. Abre la página desde un servidor web.`,
+  pct: n => `${n} %`,
+  yearTotal:'Total anual', ytd: d => `En lo que va de año · hasta el ${d}`, monthTotal:'Total mensual', monthUntil: d => `Total mensual · hasta el ${d}`,
+  weekTotal:'Total semanal', dayTotal:'Total diario · ratio de los últimos 30 días',
+  ofNormal: b => `${b} de lo normal`, normal:'normal',
+  normalNote:'<b>Normal</b>: media de 1991–2020 para los mismos días del año (normal climática de 30 años).',
+  statusPlay: (a,b,g) => `<b>${a} → ${b}</b> · ${g}`, statusIdle: y => `▶ <b>${y}</b> → hoy`,
+  barTitle: (y,mm,p,part) => `${y}: ${mm} mm (${p} de lo normal)${part ? ' · año en curso' : ''}`,
+  tipRain:'Lluvia', tipNormal:'Normal', tipRatio:'Frente a lo normal', tip30:' (30 d)',
+  reached:'Hemos llegado a hoy', dataEnds: l => `${l} · aquí terminan los datos`,
+  pickYear:'Elige un año y pulsa ▶', pickYearSub:'Puedes hacer clic en las barras de la línea de tiempo',
+  storyTop:'Los datos han llegado a hoy', close:'Volver al mapa ✕', back:'← Atrás', fwd:'Siguiente →', toMap:'Volver al mapa', ariaStory:'La historia del agua', scene: n => `Escena ${n}`,
+  s1lab:'01 · Cincuenta años de un vistazo',
+  s1h: tr => tr <= -8 ? 'En 50 años llueve menos y los años secos son más frecuentes' : tr >= 8 ? 'No llueve menos, pero el agua sigue menguando' : 'Llueve más o menos lo mismo, pero hay menos agua',
+  s1a: (n, dy, dm, wy, wm) => `Según ERA5, en España caen de media ${n} mm de lluvia al año. Pero los años son muy distintos: el más seco fue ${dy} (${dm} mm) y el más lluvioso ${wy} (${wm} mm).`,
+  s1b: (a0,a1,am,b0,b1,bm,d) => `La media de ${a0}–${a1} fue de ${am} mm; la de ${b0}–${b1}, ${bm} mm (${d} mm). El problema real no es el total. Cuando los años secos se encadenan, los embalses no se recuperan, y con más calor se evapora más.`,
+  kNormal:'Normal anual (1991–2020)', kTrend:'Tendencia lineal por década', kDry:'De los 10 años más secos, los posteriores a 2000',
+  kYtd: (y,d) => `Lluvia de ${y} hasta el ${d}, frente a lo normal`, kYear: y => `Lluvia total de ${y}`,
+  chartAria:'Lluvia anual total en España', chartNote:'Lluvia anual media en toda España (ERA5). Línea punteada: normal 1991–2020; línea oscura: tendencia lineal.',
+  chartPartial:' (año en curso)',
+  s2lab:'02 · ¿Adónde va el agua?', s2h:'8 de cada 10 gotas van al campo',
+  s2p1:'España tiene la mayor superficie de regadío de la UE (~3,8 millones de hectáreas). Sus exportaciones de fruta, hortalizas y aceituna crecen con esta agua: el agua de España también acaba en las mesas de Europa.',
+  s2p2:'El país tiene ~1.200 grandes presas y ~56.000 hm³ de capacidad. Pero si no llueve, los embalses no se llenan.',
+  uAgri:'Agricultura (regadío)', uUrban:'Urbano y doméstico', uInd:'Industria y otros', u80:'~80 %', u15:'~15 %', u5:'~5 %',
+  glass:'Agua que una persona usa en casa al día (media española, INE). Unas 89 botellas grandes de plástico.',
+  damAria:'Animación del nivel del embalse', damFull:'lleno', damCap:'Cuencas internas de Cataluña · feb. 2024',
+  s3lab:'03 · El futuro', s3h:'Una España más cálida: menos agua con la misma lluvia',
+  s3p:'Con más calor se evapora más agua del suelo y de los embalses. Aunque llueva lo mismo, llega menos agua a ríos y acuíferos.',
+  f1n:'16 %', f1:'Nivel de los embalses que abastecen a Barcelona en febrero de 2024, cuando se declaró la emergencia por sequía.',
+  f2n:'−24 %', f2:'Descenso medio previsto de los caudales de los ríos a finales de siglo en un escenario de altas emisiones (CEDEX, 2017).',
+  f3n:'+20 %', f3:'La cuenca mediterránea se calienta un 20 % más rápido que la media mundial (MedECC, 2020).',
+  f4:'La sobreexplotación de acuíferos está secando humedales como Doñana. Se esperan sequías más frecuentes y largas (IPCC AR6).',
+  s4lab:'04 · ¿Cómo lo solucionamos?', s4h:'No se trata de encontrar más agua, sino de usarla mejor',
+  o1h:'Riego inteligente', o1:'El riego por goteo, los sensores de humedad y los datos satelitales producen lo mismo con menos agua. Con el 80 % del agua en el campo, aquí está la mayor palanca, siempre que el agua ahorrada no se destine a nuevos regadíos.',
+  o2h:'Reutilizar el agua', o2:'España reutiliza solo ~10 % de sus aguas residuales depuradas. En Israel, más del 85 %.',
+  o3h:'Desalación solar', o3:'La mayor capacidad de Europa (~5 millones de m³/día) ya está en España. Con sol y viento, puede asegurar el agua de las ciudades costeras.',
+  o4h:'Tapar las fugas', o4:'En las redes urbanas se pierde alrededor del 15–20 % del agua. Contadores inteligentes y gestión de presión lo reducen rápido.',
+  o5h:'Proteger los acuíferos', o5:'Cerrar pozos ilegales y guardar el agua subterránea como reserva para la sequía. El futuro de Doñana depende de ello.',
+  o6h:'Con la naturaleza', o6:'Restaurar bosques y humedales retiene la lluvia en el suelo. Superficies urbanas permeables y la recogida de pluviales suavizan inundaciones y sequías.',
+  s5lab:'05 · Tu parte', s5h:'Los pequeños hábitos crecen al multiplicarse por 49 millones',
+  s5p:'El consumo doméstico es una parte pequeña del total. Pero en una sequía, es justo esta agua la que mantiene las ciudades en marcha.',
+  s5ass:'Supuestos: ducha 9 L/min, grifo 6 L/min (cepillado 2 min dos veces al día), lavadora y lavavajillas llenos en vez de a medias ~15 L/día, consumo doméstico ~133 L por persona y día, población ~49 millones.',
+  cShower:'Acorto mi ducha', min: n => `${n} min`, cTap:'Cierro el grifo mientras me cepillo los dientes', cFull:'Solo pongo la lavadora y el lavavajillas llenos',
+  cRes: (d, y, p, h, x) => `${d} L/día<small>~${y} litros al año, el ${p} % del consumo doméstico diario. Si todos lo hicieran: ~${h} hm³ al año, ${x} veces la capacidad anual de la desaladora de Torrevieja (~80 hm³).</small>`,
+  s6lab:'Fuentes y método', s6h:'Mira los datos otra vez',
+  s6p:'Todos los valores de lluvia proceden del reanálisis ERA5 (Servicio de Cambio Climático de Copernicus, ECMWF). La precipitación total horaria se sumó en totales diarios. La península se muestra en celdas de 0,5° y las islas en celdas de 0,25°; las Baleares están ampliadas 1,6×. Periodo normal 1991–2020. La superficie se suaviza entre celdas. Al ser un reanálisis de modelo, ERA5 puede diferir de las estaciones locales, sobre todo en lluvias intensas.',
+  replay:'Reproducir desde otro año',
+  src1:'<b>Datos climáticos</b> · Hersbach et al. (2020), ERA5 hourly data on single levels, C3S Climate Data Store, obtenidos del espejo público S3 de Open-Meteo. Contains modified Copernicus Climate Change Service information <span class="yr-now"></span>.',
+  src2:'<b>Uso del agua</b> · INE, Encuesta sobre el suministro y saneamiento del agua; MITECO (regadío, embalses, reutilización); AEDyR (desalación).',
+  src3:'<b>Futuro</b> · CEDEX (2017); MedECC (2020) MAR1; IPCC AR6, capítulo Mediterráneo; ACA / Generalitat de Catalunya, declaración de sequía (febrero de 2024).',
+  src4:'Las cifras son aproximaciones redondeadas y varían según la fuente y el año.',
+  regions:{'Castilla-Leon':'Castilla y León','Cataluña':'Cataluña','Murcia':'Región de Murcia','La Rioja':'La Rioja','Baleares':'Islas Baleares','Canarias':'Canarias',
+    'Cantabria':'Cantabria','Andalucia':'Andalucía','Asturias':'Asturias','Valencia':'Comunidad Valenciana','Navarra':'Navarra','Galicia':'Galicia',
+    'Aragon':'Aragón','Madrid':'Comunidad de Madrid','Extremadura':'Extremadura','Castilla-La Mancha':'Castilla-La Mancha','Pais Vasco':'País Vasco'},
+},
+};
+let LANG = (() => { try { const s = localStorage.getItem('lang'); if (I18N[s]) return s; } catch(e){}
+  const n = (navigator.language || '').slice(0,2); return I18N[n] ? n : 'tr'; })();
+const t = (k, ...a) => { const v = I18N[LANG][k]; return typeof v === 'function' ? v(...a) : v; };
+const fmt = (v, d=0) => v.toLocaleString(LOCALE[LANG], {minimumFractionDigits:d, maximumFractionDigits:d});
+const pct = v => t('pct', fmt(v));
+const regionName = r => I18N[LANG].regions[r] || r;
+const dfmt = (d, o) => d.toLocaleDateString(LOCALE[LANG], Object.assign({timeZone:'UTC'}, o));
+function applyStatic(){
+  document.documentElement.lang = LANG; document.title = t('docTitle');
+  document.querySelectorAll('[data-i18n]').forEach(e => e.innerHTML = t(e.dataset.i18n));
+  document.querySelectorAll('[data-i18n-aria]').forEach(e => e.setAttribute('aria-label', t(e.dataset.i18nAria)));
+  document.querySelectorAll('[data-lang]').forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === LANG));
+  document.querySelectorAll('.yr-now').forEach(e => e.textContent = new Date().getUTCFullYear());
+}
+
+/* ---------------- data ---------------- */
+async function fetchBin(url, onProg){
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(url + ' ' + r.status);
+  const total = +r.headers.get('content-length') || 0;
+  if (!r.body || !total) return new Uint8Array(await r.arrayBuffer());
+  const out = new Uint8Array(total); let got = 0; const rd = r.body.getReader();
+  for(;;){ const {done, value} = await rd.read(); if (done) break;
+    if (got + value.length > out.length) return new Uint8Array(await (await fetch(url)).arrayBuffer());
+    out.set(value, got); got += value.length; onProg(got/total); }
+  return got === total ? out : out.slice(0, got);
+}
+// binaries are shipped as base64 text
+async function fetchB64(url, onProg){
+  const txt = new TextDecoder().decode(await fetchBin(url, onProg)), bin = atob(txt.trim());
+  const out = new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i); return out;
+}
+let meta, geo, D, CL, NC, ND, LUT, W, doyIdx, t0;
+async function load(){
+  [meta, geo] = await Promise.all([fetch('data/meta.json').then(r=>r.json()), fetch('data/geo.json').then(r=>r.json())]);
+  const [d, c] = await Promise.all([fetchB64('data/daily.b64.txt', p => $('#pbar').style.width = (p*100).toFixed(0)+'%'), fetchB64('data/clim.b64.txt', ()=>{})]);
+  D = d; CL = new Uint16Array(c.buffer, c.byteOffset, c.byteLength/2);
+  NC = meta.cells.length; ND = meta.days; W = meta.weights;
+  LUT = new Float32Array(256); for (let q=0;q<256;q++) LUT[q] = (q/meta.q)**2;
+  t0 = Date.parse(meta.start + 'T00:00:00Z');
+  doyIdx = new Uint16Array(ND);
+  for (let i=0;i<ND;i++){ const dt = new Date(t0 + i*DAY), y = dt.getUTCFullYear();
+    let n = Math.round((Date.UTC(y, dt.getUTCMonth(), dt.getUTCDate()) - Date.UTC(y,0,1))/DAY);
+    if ((y%4===0 && (y%100!==0 || y%400===0)) && n >= 59) n -= 1; doyIdx[i] = n; }
+}
+
+/* ---------------- periods ---------------- */
+const G = {};
+function buildPeriods(){
+  const mk = () => ({a:[], b:[]});
+  G.day = mk(); for (let i=0;i<ND;i++){ G.day.a.push(i); G.day.b.push(i+1); }
+  G.week = mk(); { let a = 0; while (new Date(t0+a*DAY).getUTCDay() !== 1) a++; for (;a<ND;a+=7){ G.week.a.push(a); G.week.b.push(Math.min(a+7, ND)); } }
+  G.month = mk(); G.year = mk();
+  const endY = new Date(t0 + (ND-1)*DAY).getUTCFullYear();
+  for (let y=+meta.start.slice(0,4); y<=endY; y++){
+    G.year.a.push((Date.UTC(y,0,1)-t0)/DAY); G.year.b.push(Math.min((Date.UTC(y+1,0,1)-t0)/DAY, ND));
+    for (let m=0;m<12;m++){ const a = (Date.UTC(y,m,1)-t0)/DAY; if (a>=ND) break; G.month.a.push(a); G.month.b.push(Math.min((Date.UTC(y,m+1,1)-t0)/DAY, ND)); }
+  }
+}
+const dateOf = i => new Date(t0 + i*DAY);
+function label(g, i){
+  const a = G[g].a[i], b = G[g].b[i], da = dateOf(a), db = dateOf(b-1);
+  const monthEnd = new Date(Date.UTC(db.getUTCFullYear(), db.getUTCMonth()+1, 0)).getUTCDate();
+  const upto = dfmt(db, {day:'numeric', month:'long'});
+  if (g==='year') return {t: String(da.getUTCFullYear()), s: (b===ND && !(db.getUTCMonth()===11 && db.getUTCDate()===31)) ? t('ytd', upto) : t('yearTotal')};
+  if (g==='month') return {t: dfmt(da, {month:'long', year:'numeric'}), s: (b===ND && db.getUTCDate()!==monthEnd) ? t('monthUntil', upto) : t('monthTotal')};
+  if (g==='week') return {t: `${dfmt(da, {day:'numeric', month:'short'})} – ${dfmt(db, {day:'numeric', month:'short', year:'numeric'})}`, s: t('weekTotal')};
+  return {t: dfmt(da, {day:'numeric', month:'long', year:'numeric'}), s: t('dayTotal')};
+}
+
+/* ---------------- values ---------------- */
+const VAL = new Float32Array(1024), NOR = new Float32Array(1024), RVAL = new Float32Array(1024), RNOR = new Float32Array(1024);
+function sumDays(a, b, out){ out.fill(0, 0, NC); for (let d=a; d<b; d++){ const o = d*NC; for (let c=0;c<NC;c++) out[c] += LUT[D[o+c]]; } }
+function sumNorm(a, b, out){ out.fill(0, 0, NC); for (let d=a; d<b; d++){ const o = doyIdx[d]*NC; for (let c=0;c<NC;c++) out[c] += CL[o+c]/100; } }
+function compute(g, i){
+  const a = G[g].a[i], b = G[g].b[i];
+  if (g === 'year'){
+    const y = meta.yearly[i]; for (let c=0;c<NC;c++) VAL[c] = y[c];
+    if (b - a >= 365) for (let c=0;c<NC;c++) NOR[c] = meta.normal_cell[c]; else sumNorm(a, b, NOR);
+    RVAL.set(VAL.subarray(0,NC)); RNOR.set(NOR.subarray(0,NC));
+  } else {
+    sumDays(a, b, VAL); sumNorm(a, b, NOR);
+    if (g === 'day'){ const ra = Math.max(0, a-29); sumDays(ra, b, RVAL); sumNorm(ra, b, RNOR); }
+    else { RVAL.set(VAL.subarray(0,NC)); RNOR.set(NOR.subarray(0,NC)); }
+  }
+  let nv=0, nn=0, rv=0, rn=0; for (let c=0;c<NC;c++){ nv += W[c]*VAL[c]; nn += W[c]*NOR[c]; rv += W[c]*RVAL[c]; rn += W[c]*RNOR[c]; }
+  return {nat: nv, natNorm: nn, natRatio: rv/Math.max(rn, 1e-6)};
+}
+
+/* ---------------- colour ---------------- */
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const hex2rgb = h => { h = h.replace('#',''); if (h.length===3) h = h.split('').map(x=>x+x).join(''); const n = parseInt(h,16); return [(n>>16&255)/255,(n>>8&255)/255,(n&255)/255]; };
+let MM_RAMP, RATIO_RAMP, LAND_RGB;
+function buildRamps(){
+  MM_RAMP = [[0,css('--mm-zero')],[.22,'#CFD9C4'],[.45,'#98C6CB'],[.7,'#5A9CC2'],[1,'#35609E']].map(([t,c])=>[t,hex2rgb(c)]);
+  RATIO_RAMP = [[.25,'#8A4A1A'],[.5,'#C08A4E'],[.75,'#E2CDA0'],[1,css('--ratio-mid')],[1.33,'#A8D6CC'],[1.75,'#57A7A5'],[2.5,'#1C6275']]
+    .map(([r,c])=>[Math.log2(r),hex2rgb(c)]);
+  LAND_RGB = hex2rgb(css('--land'));
+}
+function ramp(stops, t, out){
+  if (t <= stops[0][0]) { out[0]=stops[0][1][0]; out[1]=stops[0][1][1]; out[2]=stops[0][1][2]; return out; }
+  for (let k=1;k<stops.length;k++){ if (t <= stops[k][0]){ const [a,c0] = stops[k-1], [b,c1] = stops[k]; const f = (t-a)/(b-a);
+      out[0]=c0[0]+(c1[0]-c0[0])*f; out[1]=c0[1]+(c1[1]-c0[1])*f; out[2]=c0[2]+(c1[2]-c0[2])*f; return out; } }
+  const l = stops[stops.length-1][1]; out[0]=l[0]; out[1]=l[1]; out[2]=l[2]; return out;
+}
+const VMAX = {day:40, week:110, month:240, year:1600};
+const mmT = (v, g) => Math.pow(Math.max(0, v)/VMAX[g], .75);
+const colorMM = (v, g, out) => ramp(MM_RAMP, Math.min(1, mmT(v,g)), out);
+const colorRatio = (r, out) => ramp(RATIO_RAMP, Math.log2(Math.max(r, .05)), out);
+const rgbCss = c => `rgb(${c.map(x=>Math.round(x*255)).join(',')})`;
+
+/* ---------------- 3D: smooth "dune" surfaces — mainland + island insets ---------------- */
+let renderer, scene, camera, controls, surfMat, groundMat, rainMat, borderMat, frameMat, rain, dirLight, hemi, BASE_DIST = 16;
+const TOP = .004, HMAX = .9;
+let curH, tgtH, curC, tgtC, rainCDF, GROUPS = [], cellG, cellV, cellX, cellZ, borders;
+// each group has its own projection: lon/lat -> world x/z, with offset + scale for the insets
+function groupDefs(){ return [
+  {id:'mainland', title:null,              lonC:-3.4,  latC:39.95, ox:0,    oz:0,   k:1,   res:.022, sigma:.3,  fw:.6,  rings:geo.spain},
+  {id:'baleares', title:null,  lonC:2.95,  latC:39.55, ox:5.35, oz:2.3, k:1.6, res:.01,  sigma:.16, fw:.18, rings:geo.islands.baleares.rings, note:'×1,6'},
+  {id:'canarias', title:null, lonC:-15.8, latC:28.55, ox:-4.3, oz:4.35, k:.7,  res:.012, sigma:.16, fw:.18, rings:geo.islands.canarias.rings},
+].map(g => Object.assign(g, {cos: Math.cos(g.latC*Math.PI/180)})); }
+const gx = (g, lon) => g.ox + (lon - g.lonC)*g.cos*g.k, gz = (g, lat) => g.oz - (lat - g.latC)*g.k;
+
+function buildSurface(g){
+  const RES = g.res;
+  let lo0=180, lo1=-180, la0=90, la1=-90;
+  g.rings.forEach(r => r.forEach(([x,y]) => { lo0=Math.min(lo0,x); lo1=Math.max(lo1,x); la0=Math.min(la0,y); la1=Math.max(la1,y); }));
+  lo0 -= RES*2; la0 -= RES*2;
+  const nx = Math.ceil((lo1 - lo0)/RES) + 4, ny = Math.ceil((la1 - la0)/RES) + 4, nv = nx*ny;
+  // grid over the group; 1 = land, 2 = coast vertex snapped onto the real coastline, 0 = sea
+  const VLON = new Float64Array(nv), VLAT = new Float64Array(nv), inside = new Uint8Array(nv);
+  const segs = []; g.rings.forEach(r => { for (let k=1;k<r.length;k++) segs.push(r[k-1][0], r[k-1][1], r[k][0], r[k][1]); });
+  // scanline fill (even-odd): one pass over the coastline per grid row
+  for (let j=0;j<ny;j++){
+    const lat = la0 + j*RES, xs = [];
+    for (let k=0;k<segs.length;k+=4){ const y0 = segs[k+1], y1 = segs[k+3];
+      if ((y0 > lat) !== (y1 > lat)) xs.push(segs[k] + (lat - y0)/(y1 - y0)*(segs[k+2] - segs[k])); }
+    xs.sort((p, q) => p - q);
+    let n = 0;
+    for (let i=0;i<nx;i++){ const v = j*nx+i, lon = lo0 + i*RES; VLON[v] = lon; VLAT[v] = lat;
+      while (n < xs.length && xs[n] < lon) n++; inside[v] = n & 1; }
+  }
+  // bucket coastline segments into 0.2° bins for fast nearest-point queries
+  const BIN = .2, bins = new Map(), bkey = (bx, by) => bx*100003 + by;
+  for (let k=0;k<segs.length;k+=4){
+    const bx0 = Math.floor(Math.min(segs[k], segs[k+2])/BIN), bx1 = Math.floor(Math.max(segs[k], segs[k+2])/BIN);
+    const by0 = Math.floor(Math.min(segs[k+1], segs[k+3])/BIN), by1 = Math.floor(Math.max(segs[k+1], segs[k+3])/BIN);
+    for (let bx=bx0; bx<=bx1; bx++) for (let by=by0; by<=by1; by++){ const kk = bkey(bx, by); (bins.get(kk) || bins.set(kk, []).get(kk)).push(k); }
+  }
+  // nearest point on the coastline within `lim` degrees (lon scaled by cos lat)
+  const nearest = (x, y, lim) => {
+    let bd = lim*lim, bx = x, by = y, hit = false; const seen = new Set();
+    const rx = lim/g.cos;
+    for (let cx=Math.floor((x-rx)/BIN); cx<=Math.floor((x+rx)/BIN); cx++) for (let cy=Math.floor((y-lim)/BIN); cy<=Math.floor((y+lim)/BIN); cy++){
+      const list = bins.get(bkey(cx, cy)); if (!list) continue;
+      for (const k of list){ if (seen.has(k)) continue; seen.add(k);
+        const x0 = segs[k], y0 = segs[k+1], x1 = segs[k+2], y1 = segs[k+3];
+        const ux = (x1-x0)*g.cos, uy = y1-y0, L = ux*ux + uy*uy;
+        const tt = L ? Math.max(0, Math.min(1, (((x-x0)*g.cos)*ux + (y-y0)*uy)/L)) : 0;
+        const px = x0 + (x1-x0)*tt, py = y0 + (y1-y0)*tt, d = ((px-x)*g.cos)**2 + (py-y)**2;
+        if (d < bd){ bd = d; bx = px; by = py; hit = true; } }
+    }
+    return {hit, d: Math.sqrt(bd), x: bx, y: by};
+  };
+  const NB = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]], near = RES*3;
+  for (let j=0;j<ny;j++) for (let i=0;i<nx;i++){
+    const v = j*nx+i; if (inside[v]) continue;
+    if (!NB.some(([di,dj]) => { const ii=i+di, jj=j+dj; return ii>=0 && jj>=0 && ii<nx && jj<ny && inside[jj*nx+ii] === 1; })) continue;
+    const q = nearest(VLON[v], VLAT[v], near);
+    if (q.hit){ VLON[v] = q.x; VLAT[v] = q.y; inside[v] = 2; }
+  }
+  // distance to the coast (chamfer) -> dunes rise from exactly zero at the shoreline
+  const dist = new Float32Array(nv);
+  for (let v=0; v<nv; v++) dist[v] = inside[v] === 1 ? 1e9 : 0;
+  const relax = (v, u, w) => { if (dist[u] + w < dist[v]) dist[v] = dist[u] + w; };
+  for (let j=0;j<ny;j++) for (let i=0;i<nx;i++){ const v = j*nx+i; if (!dist[v]) continue;
+    if (i>0) relax(v, v-1, 1); if (j>0){ relax(v, v-nx, 1); if (i>0) relax(v, v-nx-1, 1.414); if (i<nx-1) relax(v, v-nx+1, 1.414); } }
+  for (let j=ny-1;j>=0;j--) for (let i=nx-1;i>=0;i--){ const v = j*nx+i; if (!dist[v]) continue;
+    if (i<nx-1) relax(v, v+1, 1); if (j<ny-1){ relax(v, v+nx, 1); if (i<nx-1) relax(v, v+nx+1, 1.414); if (i>0) relax(v, v+nx-1, 1.414); } }
+  const sm = (a,b,x) => { const t = Math.min(1, Math.max(0, (x-a)/(b-a))); return t*t*(3-2*t); };
+  const fadeH = new Float32Array(nv), fadeC = new Float32Array(nv);
+  // near the shore, replace the grid distance with the exact distance to the coastline (no stair-steps)
+  for (let v=0; v<nv; v++) if (inside[v] === 1 && dist[v]*RES < g.fw*1.3) dist[v] = nearest(VLON[v], VLAT[v], g.fw*1.3).d/RES;
+  // blur the distance field on land: removes the creases a polygonal coastline leaves (streaks on the slopes)
+  { const R = Math.max(2, Math.round((g.id === 'mainland' ? .09 : .025)/RES)), tmp = new Float32Array(nv), land = v => inside[v] === 1;
+    for (let pass=0; pass<3; pass++){
+      for (let j=0;j<ny;j++) for (let i=0;i<nx;i++){ const v = j*nx+i; if (!land(v)){ tmp[v] = 0; continue; }
+        let s=0,n=0; for (let k=-R;k<=R;k++){ const ii=i+k; if (ii>=0&&ii<nx){ s += inside[j*nx+ii] ? dist[j*nx+ii] : 0; n++; } } tmp[v] = s/n; }
+      for (let j=0;j<ny;j++) for (let i=0;i<nx;i++){ const v = j*nx+i; if (!land(v)) continue;
+        let s=0,n=0; for (let k=-R;k<=R;k++){ const jj=j+k; if (jj>=0&&jj<ny){ s += tmp[jj*nx+i]; n++; } } dist[v] = s/n; }
+    } }
+  for (let v=0; v<nv; v++){ if (!inside[v]) continue; const d = inside[v] === 2 ? 0 : dist[v]*RES;
+    fadeH[v] = sm(0, g.fw, d); fadeC[v] = .55 + .45*sm(0, g.fw*.6, d); }
+  // gaussian weights from this group's cells to every inside vertex
+  const mine = []; for (let c=0;c<NC;c++) if (meta.cells[c].group === g.id) mine.push(c);
+  const off = new Int32Array(nv+1), idx = [], wts = [], cut = g.sigma*2.6, s2 = 2*g.sigma*g.sigma;
+  for (let v=0; v<nv; v++){
+    off[v] = idx.length;
+    if (!inside[v]) continue;
+    const lon = VLON[v], lat = VLAT[v];
+    let s = 0; const st = idx.length;
+    for (const c of mine){ const cl = meta.cells[c], dx = (cl.lon - lon)*g.cos, dy = cl.lat - lat;
+      if (Math.abs(dx) > cut || Math.abs(dy) > cut) continue;
+      const w = Math.exp(-(dx*dx+dy*dy)/s2); if (w < .01) continue; idx.push(c); wts.push(w); s += w; }
+    if (s === 0){ // isolated coastal vertex: take the nearest cell
+      let b = mine[0], bd = 1e9; for (const c of mine){ const cl = meta.cells[c], d = ((cl.lon-lon)*g.cos)**2 + (cl.lat-lat)**2; if (d < bd){ bd = d; b = c; } }
+      idx.push(b); wts.push(1); s = 1; }
+    for (let k=st;k<idx.length;k++) wts[k] /= s;
+  }
+  off[nv] = idx.length;
+  const pos = new Float32Array(nv*3), col = new Float32Array(nv*3), tri = [];
+  for (let v=0; v<nv; v++){ pos[v*3] = gx(g, VLON[v]); pos[v*3+1] = TOP; pos[v*3+2] = gz(g, VLAT[v]); }
+  for (let j=0;j<ny-1;j++) for (let i=0;i<nx-1;i++){
+    const a = j*nx+i, b = a+1, c = a+nx, d = c+1;
+    // keep triangles on land; coast-only triangles would bridge bays
+    if (inside[a] && inside[b] && inside[c] && (inside[a] === 1 || inside[b] === 1 || inside[c] === 1)) tri.push(a, b, c);
+    if (inside[b] && inside[c] && inside[d] && (inside[b] === 1 || inside[c] === 1 || inside[d] === 1)) tri.push(b, d, c);
+  }
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
+  geom.setAttribute('color', new THREE.BufferAttribute(col, 3).setUsage(THREE.DynamicDrawUsage));
+  geom.setIndex(tri);
+  // nearest grid vertex for any lon/lat (for borders, labels, rain)
+  const vertAt = (lon, lat) => Math.max(0, Math.min(ny-1, Math.round((lat - la0)/RES)))*nx + Math.max(0, Math.min(nx-1, Math.round((lon - lo0)/RES)));
+  for (const c of mine){ cellG[c] = GROUPS.length; cellV[c] = vertAt(meta.cells[c].lon, meta.cells[c].lat);
+    cellX[c] = gx(g, meta.cells[c].lon); cellZ[c] = gz(g, meta.cells[c].lat); }
+  Object.assign(g, {nv, inside, fadeH, fadeC, off, idx: Int32Array.from(idx), wts: Float32Array.from(wts), pos, col, geom, vertAt,
+    box: [gx(g, lo0), gx(g, lo1), gz(g, la1), gz(g, la0)]});
+  g.mesh = new THREE.Mesh(geom, surfMat); g.mesh.castShadow = true; g.mesh.receiveShadow = true; g.mesh.userData.g = GROUPS.length;
+  GROUPS.push(g); scene.add(g.mesh);
+}
+function updateSurfaces(){
+  for (const g of GROUPS){
+    const {nv, inside, fadeH, fadeC, off, idx, wts, pos, col} = g;
+    for (let v=0; v<nv; v++){
+      if (!inside[v]) continue;
+      let h = 0, r = 0, gg = 0, b = 0;
+      for (let k=off[v]; k<off[v+1]; k++){ const c = idx[k], w = wts[k]; h += w*curH[c]; r += w*curC[c*3]; gg += w*curC[c*3+1]; b += w*curC[c*3+2]; }
+      pos[v*3+1] = TOP + h * fadeH[v];
+      const f = fadeC[v];
+      // vertex colours are read as linear: convert from sRGB (approx.)
+      col[v*3]   = Math.pow(LAND_RGB[0] + (r  - LAND_RGB[0])*f, 2.2);
+      col[v*3+1] = Math.pow(LAND_RGB[1] + (gg - LAND_RGB[1])*f, 2.2);
+      col[v*3+2] = Math.pow(LAND_RGB[2] + (b  - LAND_RGB[2])*f, 2.2);
+    }
+    g.geom.attributes.position.needsUpdate = true; g.geom.attributes.color.needsUpdate = true;
+    g.geom.computeVertexNormals();
+  }
+  updateBorders();
+}
+const surfY = (gi, v) => GROUPS[gi].pos[v*3+1];
+
+/* community borders + island outlines, draped on the dunes */
+function buildBorders(){
+  const pts = [], ref = [];
+  const add = (gi, ring) => { const g = GROUPS[gi];
+    for (let k=1;k<ring.length;k++){
+      const [x0,y0] = ring[k-1], [x1,y1] = ring[k], n = Math.max(1, Math.ceil(Math.hypot(x1-x0, y1-y0)/(g.res*.8)));
+      for (let s=0;s<n;s++){ const a = s/n, b = (s+1)/n;
+        for (const t of [a, b]){ const lon = x0+(x1-x0)*t, lat = y0+(y1-y0)*t; pts.push(gx(g,lon), 0, gz(g,lat)); ref.push(gi, g.vertAt(lon, lat)); } }
+    } };
+  geo.regions.forEach(r => r.rings.forEach(ring => add(0, ring)));
+  GROUPS.forEach((g, gi) => { if (gi > 0) g.rings.forEach(ring => add(gi, ring)); });
+  const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  borders = new THREE.LineSegments(bg, borderMat); borders.userData.ref = Int32Array.from(ref); borders.frustumCulled = false;
+  scene.add(borders);
+}
+function updateBorders(){
+  const p = borders.geometry.attributes.position.array, ref = borders.userData.ref;
+  for (let i=0, n=p.length/3; i<n; i++) p[i*3+1] = surfY(ref[i*2], ref[i*2+1]) + .012;
+  borders.geometry.attributes.position.needsUpdate = true;
+}
+/* thin frames around the island insets */
+function buildFrames(){
+  const pts = [];
+  GROUPS.forEach((g, gi) => { if (!gi) return; const pad = .28, [x0,x1,z0,z1] = g.box;
+    const X0 = x0-pad, X1 = x1+pad, Z0 = z0-pad, Z1 = z1+pad, y = .002;
+    pts.push(X0,y,Z0, X1,y,Z0, X1,y,Z0, X1,y,Z1, X1,y,Z1, X0,y,Z1, X0,y,Z1, X0,y,Z0);
+    g.frame = [X0, Z0]; });
+  const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  scene.add(new THREE.LineSegments(fg, frameMat));
+}
+
+function initScene(){
+  THREE.ColorManagement.legacyMode = false;
+  renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  $('#stage').appendChild(renderer.domElement);
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(30, 1, .1, 300);
+  camera.position.set(0.6, 15.6, 16.2);
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(0.6, 0, 2.1); BASE_DIST = camera.position.distanceTo(controls.target);
+  controls.enableDamping = true; controls.dampingFactor = .07; controls.rotateSpeed = .6;
+  controls.minDistance = 6; controls.maxDistance = 34; controls.maxPolarAngle = 1.15; controls.minPolarAngle = .2;
+
+  hemi = new THREE.HemisphereLight(0xffffff, 0xcfd6d8, .8); scene.add(hemi);
+  dirLight = new THREE.DirectionalLight(0xfff6ea, .85); dirLight.position.set(-9, 6.5, 1);
+  dirLight.castShadow = true; dirLight.shadow.mapSize.set(2048, 2048);
+  Object.assign(dirLight.shadow.camera, {left:-10, right:11, top:9, bottom:-9, near:1, far:45});
+  dirLight.shadow.radius = 6; dirLight.shadow.bias = -.0005; dirLight.shadow.normalBias = .02;
+  scene.add(dirLight);
+
+  groundMat = new THREE.ShadowMaterial({opacity:.1});
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), groundMat); ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
+
+  surfMat = new THREE.MeshStandardMaterial({vertexColors:true, roughness:.92, metalness:0});
+  borderMat = new THREE.LineBasicMaterial({transparent:true, opacity:.35});
+  frameMat = new THREE.LineBasicMaterial({transparent:true, opacity:.9});
+  curH = new Float32Array(NC); tgtH = new Float32Array(NC); curC = new Float32Array(NC*3); tgtC = new Float32Array(NC*3);
+  cellG = new Int32Array(NC); cellV = new Int32Array(NC); cellX = new Float32Array(NC); cellZ = new Float32Array(NC);
+  groupDefs().forEach(buildSurface);
+  buildBorders(); buildFrames();
+
+  const NR = reduced ? 0 : 420;
+  rain = {n: NR, cell: new Int32Array(NR), x: new Float32Array(NR), z: new Float32Array(NR), y: new Float32Array(NR).fill(-9), v: new Float32Array(NR), active: 0};
+  const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(NR*6), 3).setUsage(THREE.DynamicDrawUsage));
+  rainMat = new THREE.LineBasicMaterial({transparent:true, opacity:.35});
+  rain.mesh = new THREE.LineSegments(rg, rainMat); rain.mesh.frustumCulled = false; scene.add(rain.mesh);
+
+  applyTheme();
+  onResize(); addEventListener('resize', onResize);
+  setupHover();
+}
+function applyTheme(){
+  buildRamps();
+  scene.background = new THREE.Color(css('--bg'));
+  rainMat.color.set(css('--rain')); borderMat.color.set(css('--ink')); frameMat.color.set(css('--line'));
+  const sa = parseFloat(css('--shadow-a')) || .1, dark = sa > .2;
+  groundMat.opacity = sa;
+  hemi.intensity = dark ? .55 : .8; dirLight.intensity = dark ? .75 : .85; hemi.groundColor.set(dark ? 0x1a2224 : 0xcfd6d8);
+  if (state.ready){ refresh(true); drawLegend(); drawBars(); }
+}
+function onResize(){
+  const el = $('#stage'), w = el.clientWidth, h = el.clientHeight;
+  renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix();
+  const f = Math.max(1, 1.25 / camera.aspect);
+  if (f !== onResize.f){ const dir = camera.position.clone().sub(controls.target); dir.setLength(BASE_DIST * f);
+    camera.position.copy(controls.target).add(dir); onResize.f = f; controls.maxDistance = 34 * f; }
+  const dock = document.querySelector('.dock'); if (dock) document.documentElement.style.setProperty('--dock-h', dock.offsetHeight + 'px');
+}
+
+function setupHover(){
+  const ray = new THREE.Raycaster(), m = new THREE.Vector2(), tip = $('#tip'), meshes = GROUPS.map(g => g.mesh);
+  let last = -1;
+  const show = ev => {
+    const r = renderer.domElement.getBoundingClientRect();
+    m.set(((ev.clientX - r.left)/r.width)*2-1, -((ev.clientY - r.top)/r.height)*2+1);
+    ray.setFromCamera(m, camera);
+    const hit = ray.intersectObjects(meshes)[0];
+    if (!hit){ tip.hidden = true; last = -1; return; }
+    const gi = hit.object.userData.g; let best = -1, bd = 1e9;
+    for (let c=0;c<NC;c++){ if (cellG[c] !== gi) continue; const dx = cellX[c] - hit.point.x, dz = cellZ[c] - hit.point.z, d = dx*dx + dz*dz; if (d < bd){ bd = d; best = c; } }
+    last = best; tip.hidden = false; fillTip(last);
+    tip.style.left = Math.min(ev.clientX - r.left, r.width - 200) + 'px'; tip.style.top = (ev.clientY - r.top) + 'px';
+  };
+  renderer.domElement.addEventListener('pointermove', e => { if (e.buttons === 0) show(e); });
+  renderer.domElement.addEventListener('pointerleave', () => { tip.hidden = true; last = -1; });
+  renderer.domElement.addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') show(e); });
+  state.tipRefresh = () => { if (last >= 0 && !tip.hidden) fillTip(last); };
+}
+function fillTip(c){
+  const cell = meta.cells[c], r = RVAL[c]/Math.max(RNOR[c], 1e-6);
+  $('#tip').innerHTML = `<b>${regionName(cell.region)}</b>
+    <div class="r"><span>${t('tipRain')}</span><span>${fmt(VAL[c], VAL[c] < 10 ? 1 : 0)} mm</span></div>
+    <div class="r"><span>${t('tipNormal')}</span><span>${fmt(NOR[c], NOR[c] < 10 ? 1 : 0)} mm</span></div>
+    <div class="r"><span>${t('tipRatio')}${state.g==='day' ? t('tip30') : ''}</span><span>${pct(r*100)}</span></div>`;
+}
+
+/* ---------------- state & UI ---------------- */
+const state = {g:'year', i:0, mode:'mm', playing:false, speed:1, acc:0, ready:false, moving:true};
+const RATE = {day:14, week:5, month:3, year:1.1};
+const hOf = v => HMAX * Math.pow(Math.min(1.25, Math.max(0, v)/VMAX[state.g]), .85);
+
+function refresh(instant){
+  const r = compute(state.g, state.i), out = [0,0,0];
+  let tot = 0; rainCDF = rainCDF || new Float32Array(NC);
+  for (let c=0;c<NC;c++){
+    tgtH[c] = hOf(VAL[c]);
+    if (state.mode === 'mm') colorMM(VAL[c], state.g, out); else colorRatio(RVAL[c]/Math.max(RNOR[c], 1e-3), out);
+    tgtC[c*3] = out[0]; tgtC[c*3+1] = out[1]; tgtC[c*3+2] = out[2];
+    tot += Math.pow(Math.max(0, VAL[c]), 1.6); rainCDF[c] = tot;
+  }
+  for (let c=0;c<NC;c++) rainCDF[c] /= (tot || 1);
+  rain.active = tot === 0 ? 0 : Math.round(rain.n * Math.min(1, .03 + Math.sqrt(Math.max(0, r.nat)/VMAX[state.g]) * 1.3));
+  if (instant){ curH.set(tgtH); curC.set(tgtC); }
+  state.moving = true;
+  updateCard(r); updateTimeline(); state.tipRefresh && state.tipRefresh();
+}
+function updateCard(r){
+  const L = label(state.g, state.i);
+  $('#c-period').innerHTML = `${L.t}<small>${L.s}</small>`;
+  $('#c-mm').innerHTML = `${fmt(r.nat, r.nat < 10 ? 1 : 0)}<u>mm</u>`;
+  const cls = r.natRatio < .85 ? 'dry' : r.natRatio > 1.15 ? 'wet' : '';
+  $('#c-ratio').innerHTML = `${t('ofNormal', `<b class="${cls}">${pct(r.natRatio*100)}</b>`)} · ${t('normal')} ${fmt(r.natNorm, r.natNorm<10?1:0)} mm`;
+}
+const yearOfPeriod = (g, i) => dateOf(G[g].a[i]).getUTCFullYear();
+function updateTimeline(){
+  const s = $('#slider'); s.max = G[state.g].a.length - 1; s.value = state.i;
+  s.style.setProperty('--p', (state.i / Math.max(1, s.max) * 100) + '%');
+  const yi = yearOfPeriod(state.g, state.i) - meta.years[0];
+  document.querySelectorAll('#bars i').forEach((b,k) => b.classList.toggle('cur', k === yi));
+  const endY = meta.years[meta.years.length-1];
+  $('#status').innerHTML = state.playing ? t('statusPlay', state.startYear, endY, t('gran')[state.g]) : t('statusIdle', yearOfPeriod(state.g, state.i));
+}
+function drawBars(){
+  const box = $('#bars'); box.innerHTML = '';
+  const nat = meta.national_yearly, max = Math.max(...nat), n = meta.stats.normal_mm, partial = meta.stats.partial, out = [0,0,0];
+  nat.forEach((v, k) => {
+    const i = document.createElement('i');
+    const ratio = (k === nat.length-1 && partial) ? partial.mm/partial.normal_mm : v/n;
+    i.style.height = (v/max*100) + '%'; i.style.background = rgbCss(colorRatio(ratio, out));
+    i.title = t('barTitle', meta.years[k], fmt(v), pct(ratio*100), k===nat.length-1 && partial);
+    i.addEventListener('click', () => { stop(); gotoYear(meta.years[k]); });
+    box.appendChild(i);
+  });
+  const nl = document.createElement('div'); nl.className = 'nline'; nl.style.bottom = (n/max*100) + '%'; box.appendChild(nl);
+  const yb = $('#years'); yb.innerHTML = '';
+  const y0 = meta.years[0], y1 = meta.years[meta.years.length-1];
+  for (let y = Math.ceil(y0/10)*10; y <= y1; y += 10){ const s = document.createElement('span'); s.textContent = y; s.style.left = ((y - y0 + .5)/(y1 - y0 + 1)*100) + '%'; yb.appendChild(s); }
+}
+function drawLegend(){
+  const cv = $('#lg'), ctx = cv.getContext('2d'), out = [0,0,0], ticks = $('#lg-ticks');
+  for (let x=0;x<cv.width;x++){ const t = x/(cv.width-1);
+    if (state.mode === 'mm') ramp(MM_RAMP, t, out); else ramp(RATIO_RAMP, Math.log2(.25) + t*(Math.log2(2.5)-Math.log2(.25)), out);
+    ctx.fillStyle = rgbCss(out); ctx.fillRect(x, 0, 1, cv.height); }
+  if (state.mode === 'mm'){
+    const vm = VMAX[state.g];
+    ticks.innerHTML = [0, vm*.5, vm].map((v,k,a) => `<span style="left:${Math.pow(v/vm,.75)*100}%">${fmt(v)}${k===a.length-1?'+':''}</span>`).join('');
+  } else {
+    const L0 = Math.log2(.25), L1 = Math.log2(2.5);
+    ticks.innerHTML = [.25,.5,1,2.5].map((r,k,a) => `<span style="left:${(Math.log2(r)-L0)/(L1-L0)*100}%">${pct(r*100)}${k===a.length-1?'+':''}</span>`).join('');
+  }
+}
+function findPeriod(g, day){ const a = G[g].a; let lo = 0, hi = a.length-1; while (lo < hi){ const m = (lo+hi+1)>>1; if (a[m] <= day) lo = m; else hi = m-1; } return lo; }
+function setGran(g){
+  if (g === state.g) return;
+  const d = G[state.g].a[state.i]; state.g = g; state.i = findPeriod(g, d);
+  document.querySelectorAll('[data-g]').forEach(b => b.setAttribute('aria-pressed', b.dataset.g === g));
+  drawLegend(); refresh(false);
+}
+function gotoYear(y){ const day = Math.max(0, (Date.UTC(y,0,1)-t0)/DAY); state.i = findPeriod(state.g, day); if (G[state.g].a[state.i] < day && state.i < G[state.g].a.length-1) state.i++; refresh(false); }
+function setMode(m){ state.mode = m; $('#m-mm').setAttribute('aria-pressed', m==='mm'); $('#m-ratio').setAttribute('aria-pressed', m==='ratio'); drawLegend(); refresh(false); }
+
+const ICON_PLAY = '<path d="M5 3.5v13l11-6.5z" fill="currentColor"/>', ICON_PAUSE = '<rect x="4" y="3" width="4" height="14" rx="1" fill="currentColor"/><rect x="12" y="3" width="4" height="14" rx="1" fill="currentColor"/>';
+function play(){
+  if (state.i >= G[state.g].a.length - 1) state.i = 0;
+  state.playing = true; state.acc = 0; state.startYear = yearOfPeriod(state.g, state.i);
+  $('#play-ico').innerHTML = ICON_PAUSE; $('#play').setAttribute('aria-label', t('pause')); updateTimeline();
+}
+function stop(){ state.playing = false; $('#play-ico').innerHTML = ICON_PLAY; $('#play').setAttribute('aria-label', t('play')); updateTimeline(); }
+function toast(t, s, ms=2200){ const el = $('#toast'); el.innerHTML = `${t}<small>${s}</small>`; el.hidden = false; el.style.opacity = 1;
+  clearTimeout(toast.t); toast.t = setTimeout(() => { el.style.opacity = 0; setTimeout(() => el.hidden = true, 500); }, ms); }
+function reachedEnd(){ stop(); toast(t('reached'), t('dataEnds', label(state.g, state.i).t), 1800); setTimeout(openStory, 1900); }
+
+/* ---------------- loop ---------------- */
+let lastT = performance.now();
+function frame(now){
+  const dt = Math.min(.1, (now - lastT)/1000); lastT = now;
+  if (state.playing){
+    state.acc += dt * RATE[state.g] * state.speed;
+    if (state.acc >= 1){ const steps = Math.floor(state.acc); state.acc -= steps; const last = G[state.g].a.length - 1;
+      state.i = Math.min(last, state.i + steps); refresh(false); if (state.i >= last) reachedEnd(); }
+  }
+  if (state.moving){
+    const k = reduced ? 1 : 1 - Math.exp(-dt * (state.playing ? 5 + state.speed : 4));
+    let md = 0;
+    for (let c=0;c<NC;c++){ const d = tgtH[c] - curH[c]; curH[c] += d*k; md = Math.max(md, Math.abs(d));
+      for (let j=0;j<3;j++){ const e = tgtC[c*3+j] - curC[c*3+j]; curC[c*3+j] += e*k; md = Math.max(md, Math.abs(e)); } }
+    updateSurfaces();
+    if (md < 1e-3) state.moving = false;
+  }
+  stepRain(dt);
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+function pickCell(){ const r = Math.random(); let lo = 0, hi = NC-1; while (lo < hi){ const m = (lo+hi)>>1; if (rainCDF[m] < r) lo = m+1; else hi = m; } return lo; }
+function stepRain(dt){
+  if (!rain.n) return;
+  const pos = rain.mesh.geometry.attributes.position.array;
+  for (let k=0;k<rain.n;k++){
+    const o = k*6;
+    if (k >= rain.active){ pos.fill(0, o, o+6); rain.y[k] = -9; continue; }
+    if (rain.y[k] < surfY(cellG[rain.cell[k]], cellV[rain.cell[k]])){
+      const c = pickCell(), a = Math.random()*Math.PI*2, rr = Math.random()*.44*meta.cells[c].size*GROUPS[cellG[c]].k; rain.cell[k] = c;
+      rain.x[k] = cellX[c] + Math.cos(a)*rr; rain.z[k] = cellZ[c] + Math.sin(a)*rr;
+      rain.y[k] = surfY(cellG[c], cellV[c]) + .8 + Math.random()*2.4; rain.v[k] = 2.6 + Math.random()*1.2;
+    }
+    rain.y[k] -= rain.v[k] * dt;
+    pos[o] = rain.x[k]; pos[o+1] = rain.y[k]; pos[o+2] = rain.z[k]; pos[o+3] = rain.x[k]; pos[o+4] = rain.y[k] + .12; pos[o+5] = rain.z[k];
+  }
+  rain.mesh.geometry.attributes.position.needsUpdate = true;
+}
+
+/* ---------------- story ---------------- */
+let sIdx = 0, sTimer = null, sAuto = true;
+const SCENE_MS = [15000, 13000, 14000, 16000, 20000, 20000];
+function openStory(){ $('#story').hidden = false; sAuto = true; $('#dots').classList.remove('paused'); goScene(0); }
+function closeStory(){ $('#story').hidden = true; clearTimeout(sTimer); }
+function goScene(n){
+  const sc = [...document.querySelectorAll('.scene')];
+  sIdx = Math.max(0, Math.min(sc.length-1, n));
+  sc.forEach((s,k) => { s.classList.remove('on'); if (k === sIdx){ void s.offsetWidth; s.classList.add('on'); s.scrollTop = 0; } });
+  const dots = $('#dots'); dots.innerHTML = '';
+  sc.forEach((_,k) => { const b = document.createElement('button'); b.setAttribute('aria-label', t('scene', k+1));
+    b.className = k < sIdx ? 'on' : k === sIdx ? 'cur' : ''; b.style.setProperty('--dur', SCENE_MS[k] + 'ms');
+    b.onclick = () => { pauseAuto(); goScene(k); }; dots.appendChild(b); });
+  $('#s-prev').disabled = sIdx === 0; $('#s-next').textContent = sIdx === sc.length-1 ? t('toMap') : t('fwd');
+  if (sIdx === 1) countUp($('#lit'), 133, 2400);
+  if (sIdx === 2) animateDam();
+  clearTimeout(sTimer);
+  if (sAuto && sIdx < sc.length-1) sTimer = setTimeout(() => goScene(sIdx+1), SCENE_MS[sIdx]);
+}
+function pauseAuto(){ sAuto = false; clearTimeout(sTimer); $('#dots').classList.add('paused'); }
+function countUp(el, to, ms){ if (reduced){ el.textContent = to; return; } const s = performance.now();
+  const f = t => { const p = Math.min(1, (t-s)/ms); el.textContent = Math.round(to * (1 - Math.pow(1-p, 3))); if (p < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); }
+function animateDam(){
+  const w = $('#dam-water'), p = $('#dam-pct'), y = pct => 222 - 172*pct/100, s = performance.now(), from = 72, to = 16, ms = reduced ? 1 : 3200;
+  const f = t => { const k = Math.min(1, Math.max(0, (t - s - 500)/ms)), v = from + (to-from)*(1 - Math.pow(1-k, 3));
+    w.setAttribute('y', y(v).toFixed(1)); p.textContent = pct(Math.round(v)); if (k < 1 && sIdx === 2) requestAnimationFrame(f); };
+  requestAnimationFrame(f);
+}
+function buildStory(){
+  const st = meta.stats, nat = meta.national_yearly, years = meta.years, out = [0,0,0];
+  const sgn = v => (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(Math.abs(v), Math.abs(v) < 10 ? 1 : 0);
+  const tr = st.trend_mm_per_decade;
+  $('#s1-h').textContent = t('s1h', tr);
+  $('#k-normal').textContent = fmt(st.normal_mm) + ' mm';
+  $('#k-trend').textContent = sgn(tr) + ' mm';
+  $('#k-dry').textContent = `${st.dry_years_since_2000} / 10`;
+  if (st.partial){ const r = st.partial.mm/st.partial.normal_mm, d = new Date(st.partial.through + 'T00:00:00Z');
+    $('#k-ytd').textContent = pct(r*100); $('#k-ytd-l').textContent = t('kYtd', st.partial.year, dfmt(d, {day:'numeric', month:'long'}));
+  } else { $('#k-ytd').textContent = fmt(nat[nat.length-1]) + ' mm'; $('#k-ytd-l').textContent = t('kYear', years[years.length-1]); }
+  const dr = st.driest, wt = st.wettest, diff = st.second_half.mm - st.first_half.mm;
+  $('#s1-a').textContent = t('s1a', fmt(st.normal_mm), dr[0].year, fmt(dr[0].mm), wt[0].year, fmt(wt[0].mm));
+  $('#s1-b').textContent = t('s1b', st.first_half.from, st.first_half.to, fmt(st.first_half.mm), st.second_half.from, st.second_half.to, fmt(st.second_half.mm), sgn(diff));
+
+  const Wc = 560, Hc = 300, L = 40, R = 8, T = 18, B = 26, full = st.partial ? nat.length-1 : nat.length;
+  const vmax = Math.ceil(Math.max(...nat)/100)*100, bw = (Wc-L-R)/nat.length, x = k => L + k*bw, y = v => T + (Hc-T-B)*(1 - v/vmax);
+  let h = '';
+  for (let v=0; v<=vmax; v+=200) h += `<line x1="${L}" x2="${Wc-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-8}" y="${y(v)+3.5}" text-anchor="end">${v}</text>`;
+  nat.forEach((v,k) => { const partial = st.partial && k === nat.length-1, ratio = partial ? st.partial.mm/st.partial.normal_mm : v/st.normal_mm;
+    h += `<rect class="yb" style="--i:${k}" x="${(x(k)+1).toFixed(1)}" y="${y(v).toFixed(1)}" width="${(bw-2).toFixed(1)}" height="${(y(0)-y(v)).toFixed(1)}" rx="1" fill="${rgbCss(colorRatio(ratio,out))}" ${partial?'opacity=".4"':''}><title>${years[k]}: ${fmt(v)} mm${partial ? t('chartPartial') : ''}</title></rect>`; });
+  h += `<line x1="${L}" x2="${Wc-R}" y1="${y(st.normal_mm)}" y2="${y(st.normal_mm)}" stroke="var(--ink)" stroke-dasharray="2 4" opacity=".6"/>`;
+  let sx=0, sy=0, sxx=0, sxy=0; for (let k=0;k<full;k++){ sx+=k; sy+=nat[k]; sxx+=k*k; sxy+=k*nat[k]; }
+  const b1 = (full*sxy - sx*sy)/(full*sxx - sx*sx), b0 = (sy - b1*sx)/full;
+  h += `<line class="trend" x1="${x(0)+bw/2}" y1="${y(b0)}" x2="${x(full-1)+bw/2}" y2="${y(b0+b1*(full-1))}" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" pathLength="1000"/>`;
+  for (let yy = Math.ceil(years[0]/10)*10; yy <= years[years.length-1]; yy += 10) h += `<text x="${x(yy - years[0])+bw/2}" y="${Hc-6}" text-anchor="middle">${yy}</text>`;
+  [dr[0], wt[0]].forEach(d => { const k = d.year - years[0]; h += `<text x="${x(k)+bw/2}" y="${y(d.mm)-6}" text-anchor="middle" style="fill:var(--ink)">${d.year}</text>`; });
+  $('#chart50').innerHTML = h;
+}
+function calc(){
+  const sh = +$('#c-shower').value, tap = $('#c-tap').checked, full = $('#c-full').checked;
+  $('#c-shower-v').textContent = t('min', sh);
+  const perDay = sh * 9 + (tap ? 24 : 0) + (full ? 15 : 0), hm3 = perDay * 49e6 * 365 / 1e9;
+  $('#c-res').innerHTML = t('cRes', fmt(perDay), fmt(perDay*365), fmt(perDay/133*100), fmt(hm3), fmt(hm3/80,1));
+}
+
+/* ---------------- wire ---------------- */
+function wire(){
+  $('#play').onclick = () => state.playing ? stop() : play();
+  $('#prev').onclick = () => { stop(); state.i = Math.max(0, state.i-1); refresh(false); };
+  $('#next').onclick = () => { stop(); state.i = Math.min(G[state.g].a.length-1, state.i+1); refresh(false); };
+  document.querySelectorAll('[data-g]').forEach(b => b.onclick = () => setGran(b.dataset.g));
+  document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { state.speed = +b.dataset.s; document.querySelectorAll('[data-s]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
+  $('#m-mm').onclick = () => setMode('mm'); $('#m-ratio').onclick = () => setMode('ratio');
+  $('#slider').addEventListener('input', e => { stop(); state.i = +e.target.value; refresh(false); });
+  $('#open-story').onclick = () => { stop(); openStory(); };
+  $('#close-story').onclick = closeStory; $('#back-map').onclick = closeStory;
+  $('#replay').onclick = () => { closeStory(); setGran('year'); gotoYear(meta.years[0]); toast(t('pickYear'), t('pickYearSub')); };
+  $('#s-prev').onclick = () => { pauseAuto(); goScene(sIdx-1); };
+  $('#s-next').onclick = () => { pauseAuto(); if (sIdx === document.querySelectorAll('.scene').length-1) closeStory(); else goScene(sIdx+1); };
+  ['#c-shower','#c-tap','#c-full'].forEach(s => $(s).addEventListener('input', calc));
+  addEventListener('keydown', e => {
+    if (!$('#story').hidden){ if (e.key === 'Escape') closeStory(); if (e.key === 'ArrowRight'){ pauseAuto(); goScene(sIdx+1); } if (e.key === 'ArrowLeft'){ pauseAuto(); goScene(sIdx-1); } return; }
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === ' '){ e.preventDefault(); state.playing ? stop() : play(); }
+  });
+  $('#scenes').addEventListener('pointerdown', pauseAuto);
+  document.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => setLang(b.dataset.lang));
+  const mq = matchMedia('(prefers-color-scheme: dark)'); mq.addEventListener && mq.addEventListener('change', applyTheme);
+  new MutationObserver(applyTheme).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+}
+
+function setLang(l){
+  LANG = l; try { localStorage.setItem('lang', l); } catch(e){}
+  applyStatic();
+  if (!state.ready) return;
+  drawLegend(); drawBars(); buildStory(); calc(); refresh(false);
+  $('#play').setAttribute('aria-label', t(state.playing ? 'pause' : 'play'));
+  if (!$('#story').hidden) $('#s-next').textContent = sIdx === document.querySelectorAll('.scene').length-1 ? t('toMap') : t('fwd');
+}
+
+(async () => {
+  applyStatic();
+  try { await load(); }
+  catch (e){ $('#ptext').textContent = t('loadErr', e.message); return; }
+  buildPeriods(); initScene(); wire();
+  state.ready = true;
+  drawLegend(); drawBars(); buildStory(); calc();
+  refresh(true);
+  const ld = $('#loader'); ld.style.opacity = 0; setTimeout(() => ld.hidden = true, 600);
+  requestAnimationFrame(frame);
+})();
+})();
+</script>

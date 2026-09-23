@@ -1,0 +1,6 @@
+.venv/
+pipeline/raw/
+pipeline/raw_*/
+pipeline/*.log
+__pycache__/
+.DS_Store
