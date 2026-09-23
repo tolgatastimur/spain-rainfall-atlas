@@ -7,6 +7,8 @@ Balearics) and the native 0.25 deg ERA5 points that overlap it:
   yearly   [year][point] totals (mm), normal [point] 1991-2020 annual mean
   daily    base64 uint8 [day][point], q = round(sqrt(mm) * Q)   (same encoding as daily.b64.txt)
   clim     base64 uint16 [365][point] daily normal (31-day smoothed) * 100
+  munis    municipalities of each sub-unit (or of the community when it has a single
+           province): name, outline, and gaussian weights to the points at its centre
 
 Run after fetch_era5.py (both boxes) and build_geo.py.
 """
@@ -30,6 +32,53 @@ def slug(name):
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
 
 
+SIGMA = 0.16      # same smoothing the site uses for 0.25 deg points
+
+
+def decode_topo(topo, obj):
+    """TopoJSON (quantized, delta-encoded arcs) -> list of (properties, shapely geometry)."""
+    sx, sy = topo["transform"]["scale"]; tx, ty = topo["transform"]["translate"]
+    arcs = []
+    for arc in topo["arcs"]:
+        x = y = 0; pts = []
+        for dx, dy in arc:
+            x += dx; y += dy; pts.append((x * sx + tx, y * sy + ty))
+        arcs.append(pts)
+
+    def ring(idx):
+        pts = []
+        for i in idx:
+            a = arcs[i] if i >= 0 else arcs[~i][::-1]
+            pts.extend(a if not pts else a[1:])
+        return pts
+    out = []
+    for g in topo["objects"][obj]["geometries"]:
+        polys = g["arcs"] if g["type"] == "MultiPolygon" else [g["arcs"]] if g["type"] == "Polygon" else []
+        ps = [Polygon(ring(p[0]), [r for r in map(ring, p[1:]) if len(r) > 3]) for p in polys if len(ring(p[0])) > 3]
+        if ps:
+            out.append((dict(g.get("properties", {}), id=g.get("id")), unary_union([q.buffer(0) for q in ps])))
+    return out
+
+
+def muni_entries(munis, container, pts):
+    """Municipalities inside `container` with outline + weights to the community's points."""
+    cos = np.cos(np.radians(container.centroid.y))
+    P = np.array([[p["lon"], p["lat"]] for p in pts])
+    res = []
+    for props, g in munis:
+        rp = g.representative_point()
+        if not container.contains(rp):
+            continue
+        d2 = ((P[:, 0] - rp.x) * cos) ** 2 + (P[:, 1] - rp.y) ** 2
+        w = np.exp(-d2 / (2 * SIGMA ** 2))
+        keep = np.where(w > .01)[0]
+        if not len(keep):
+            keep = np.array([int(np.argmin(d2))]); w = np.ones(len(P))
+        ws = w[keep] / w[keep].sum()
+        res.append({"n": props.get("name", ""), "r": rings(g, 0.0015, 0.0), "w": [[int(c), round(float(x), 3)] for c, x in zip(keep, ws)]})
+    return res
+
+
 def clim_of(X, years, doys):
     sel = (years >= bd.NORMAL[0]) & (years <= bd.NORMAL[1])
     clim = np.zeros((365, X.shape[1])); cnt = np.zeros(365)
@@ -43,6 +92,8 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     comm = json.load(open(os.path.join(HERE, "geo", "communities.geojson")))["features"]
     prov = json.load(open(os.path.join(HERE, "geo", "provinces.geojson")))["features"]
+    munis = decode_topo(json.load(open(os.path.join(HERE, "geo", "municipalities.topo.json"))), "municipalities")
+    print("municipalities", len(munis))
     raw = {k: bd.load_daily(*v[:1], *v[3:]) for k, v in bd.BOXES.items()}
     nd = min(a.shape[2] for a in raw.values())
     start = dt.date(bd.FIRST_YEAR, 1, 1)
@@ -108,7 +159,9 @@ def main():
         out = {
             "name": name, "q": bd.Q, "start": dates[0].isoformat(), "days": nd, "years": ylist,
             "rings": rings(cgeom, 0.004, 0.0004),
-            "units": [{"name": u["name"], "rings": rings(u["geom"], 0.004, 0.0004), "label": label_point(u["geom"])} for u in units],
+            "units": [{"name": u["name"], "rings": rings(u["geom"], 0.004, 0.0004), "label": label_point(u["geom"]),
+                       "munis": muni_entries(munis, u["geom"], pts)} for u in units],
+            "munis": [] if units else muni_entries(munis, cgeom, pts),
             "points": pts,
             "yearly": [[round(float(v)) for v in row] for row in yearly],
             "normal": [round(float(v), 1) for v in normal],
@@ -117,8 +170,9 @@ def main():
         }
         fn = slug(name) + ".json"
         json.dump(out, open(os.path.join(OUT, fn), "w"), separators=(",", ":"), ensure_ascii=False)
+        nm = len(out["munis"]) + sum(len(u["munis"]) for u in out["units"])
         index.append({"name": name, "file": fn, "units": len(units), "points": len(pts)})
-        print(f"{name:20s} {len(pts):4d} pts {len(units):2d} units {os.path.getsize(os.path.join(OUT, fn)) // 1024:6d} KB")
+        print(f"{name:20s} {len(pts):4d} pts {len(units):2d} units {nm:4d} munis {os.path.getsize(os.path.join(OUT, fn)) // 1024:6d} KB")
     json.dump(index, open(os.path.join(OUT, "index.json"), "w"), ensure_ascii=False, indent=0)
 
 

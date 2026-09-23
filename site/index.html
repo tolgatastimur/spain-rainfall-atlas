@@ -51,6 +51,7 @@ button{cursor:pointer;background:none;border:0;padding:0}
 .side .area{margin-bottom:6px}
 .units{display:grid;gap:2px;margin-top:16px;padding-top:12px;border-top:1px solid var(--line);max-height:34vh;overflow:auto}
 .units .lab{margin-bottom:4px}
+.units .lnote{margin:8px 0 0;text-align:left}
 .units button{display:grid;grid-template-columns:8px 1fr auto 52px;gap:8px;align-items:center;text-align:left;font-size:12.5px;padding:3px 0}
 .units button i{width:8px;height:8px;border-radius:50%}
 .units button .v{color:var(--muted);font-family:var(--f-mono);font-size:11.5px}
@@ -63,6 +64,9 @@ body.busy #stage canvas{cursor:progress}
 .tg.lang button{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em}
 
 .head{position:absolute;top:28px;left:32px;max-width:340px}
+/* overlays let clicks through to the map, except their controls */
+.head,.side{pointer-events:none}
+.head button,.side button,.side .units{pointer-events:auto}
 h1{font-weight:500;font-size:22px;letter-spacing:-.01em;margin:8px 0 6px;line-height:1.2}
 .head p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
 
@@ -100,17 +104,14 @@ h1{font-weight:500;font-size:22px;letter-spacing:-.01em;margin:8px 0 6px;line-he
 .status b{color:var(--ink);font-weight:500}
 .story-link{font-size:13px;color:var(--ink);border-bottom:1.5px solid var(--ink);padding-bottom:1px}
 
-.timeline{position:relative;padding-top:24px}
-.bars{position:absolute;left:7px;right:7px;top:0;height:20px;display:flex;align-items:flex-end;gap:2px}
-.bars i{flex:1;border-radius:1px;min-height:2px;cursor:pointer;opacity:.7;transition:opacity .2s}
-.bars i:hover,.bars i.cur{opacity:1}
-.bars i.cur{box-shadow:0 -3px 0 -1px var(--ink)}
-.bars .nline{position:absolute;left:0;right:0;border-top:1px dotted var(--faint);pointer-events:none}
-input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;background:transparent;margin:0;display:block}
-input[type=range]::-webkit-slider-runnable-track{height:2px;background:linear-gradient(to right,var(--ink) var(--p,0%),var(--line) var(--p,0%))}
+.timeline{position:relative;padding-top:30px}
+.bubble{position:absolute;top:0;transform:translateX(-50%);font-family:var(--f-mono);font-size:12px;white-space:nowrap;color:var(--bg);background:var(--ink);padding:3px 8px;border-radius:6px;pointer-events:none}
+.bubble::after{content:"";position:absolute;left:50%;bottom:-4px;margin-left:-4px;border:4px solid transparent;border-bottom:0;border-top-color:var(--ink)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;cursor:pointer;touch-action:none;background:transparent;margin:0;display:block}
+input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:linear-gradient(to right,var(--ink) var(--p,0%),var(--line) var(--p,0%))}
 input[type=range]::-moz-range-track{height:2px;background:var(--line)}
 input[type=range]::-moz-range-progress{height:2px;background:var(--ink)}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--bg);border:2px solid var(--ink);margin-top:-6px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--bg);border:2px solid var(--ink);margin-top:-7.5px}
 input[type=range]::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:var(--bg);border:2px solid var(--ink)}
 .years{position:relative;height:14px;margin:4px 7px 0;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
 .years span{position:absolute;transform:translateX(-50%)}
@@ -285,7 +286,7 @@ input[type=range]::-moz-range-thumb{width:10px;height:10px;border-radius:50%;bac
       <button class="story-link" id="open-story" data-i18n="storyLink"></button>
     </div>
     <div class="timeline">
-      <div class="bars" id="bars"></div>
+      <output class="bubble" id="bubble" hidden></output>
       <input type="range" id="slider" min="0" max="1" step="1" value="0" data-i18n-aria="ariaTime">
       <div class="years" id="years"></div>
     </div>
@@ -468,7 +469,7 @@ tr: {
   yearTotal:'Yıllık toplam', ytd: d => `Yıl başından ${d} tarihine kadar`, monthTotal:'Aylık toplam', monthUntil: d => `Aylık toplam · ${d} tarihine kadar`,
   weekTotal:'Haftalık toplam', dayTotal:'Günlük toplam · oran son 30 güne göre',
   ofNormal: b => `Normalin ${b}`, normal:'normal',
-  spain:'Tüm İspanya', crumbSpain:'İspanya', clickRegion:'Yakınlaşmak için bir topluluğa tıkla', clickProv:'Bir ile tıkla', clickIsland:'Bir adaya tıkla', tipOpen:'Tıkla → yakınlaş', unitsProv:'İller', unitsIsl:'Adalar',
+  spain:'Tüm İspanya', crumbSpain:'İspanya', clickRegion:'Yakınlaşmak için bir topluluğa tıkla', clickProv:'Bir ile tıkla', clickIsland:'Bir adaya tıkla', tipOpen:'Tıkla → yakınlaş', unitsProv:'İller', unitsIsl:'Adalar', unitsMuni:'İlçeler', hoverMuni:'Değerleri görmek için bir ilçenin üzerine gel', muniNote:'ERA5 ~25 km çözünürlüktedir; ilçe değerleri bu ızgaradan ilçe merkezine enterpole edilir.',
   normalNote:'<b>Normal</b>: aynı gün ve haftaların 1991–2020 ortalaması (30 yıllık iklim normali).',
   statusPlay: (a,b,g) => `<b>${a} → ${b}</b> · ${g}`, statusIdle: y => `▶ <b>${y}</b> → bugün`,
   barTitle: (y,mm,p,part) => `${y}: ${mm} mm (normalin ${p})${part ? ' · yıl devam ediyor' : ''}`,
@@ -532,7 +533,7 @@ en: {
   yearTotal:'Annual total', ytd: d => `Year to date · until ${d}`, monthTotal:'Monthly total', monthUntil: d => `Monthly total · until ${d}`,
   weekTotal:'Weekly total', dayTotal:'Daily total · ratio over the last 30 days',
   ofNormal: b => `${b} of normal`, normal:'normal',
-  spain:'All of Spain', crumbSpain:'Spain', clickRegion:'Click a region to zoom in', clickProv:'Click a province', clickIsland:'Click an island', tipOpen:'Click → zoom in', unitsProv:'Provinces', unitsIsl:'Islands',
+  spain:'All of Spain', crumbSpain:'Spain', clickRegion:'Click a region to zoom in', clickProv:'Click a province', clickIsland:'Click an island', tipOpen:'Click → zoom in', unitsProv:'Provinces', unitsIsl:'Islands', unitsMuni:'Municipalities', hoverMuni:'Hover a municipality to see its values', muniNote:'ERA5 has ~25 km resolution; municipal values are interpolated from that grid to each municipality centre.',
   normalNote:'<b>Normal</b>: the 1991–2020 average for the same days of the year (30-year climate normal).',
   statusPlay: (a,b,g) => `<b>${a} → ${b}</b> · ${g}`, statusIdle: y => `▶ <b>${y}</b> → today`,
   barTitle: (y,mm,p,part) => `${y}: ${mm} mm (${p} of normal)${part ? ' · year in progress' : ''}`,
@@ -596,7 +597,7 @@ es: {
   yearTotal:'Total anual', ytd: d => `En lo que va de año · hasta el ${d}`, monthTotal:'Total mensual', monthUntil: d => `Total mensual · hasta el ${d}`,
   weekTotal:'Total semanal', dayTotal:'Total diario · ratio de los últimos 30 días',
   ofNormal: b => `${b} de lo normal`, normal:'normal',
-  spain:'Toda España', crumbSpain:'España', clickRegion:'Haz clic en una comunidad para acercarte', clickProv:'Haz clic en una provincia', clickIsland:'Haz clic en una isla', tipOpen:'Clic → acercar', unitsProv:'Provincias', unitsIsl:'Islas',
+  spain:'Toda España', crumbSpain:'España', clickRegion:'Haz clic en una comunidad para acercarte', clickProv:'Haz clic en una provincia', clickIsland:'Haz clic en una isla', tipOpen:'Clic → acercar', unitsProv:'Provincias', unitsIsl:'Islas', unitsMuni:'Municipios', hoverMuni:'Pasa el cursor por un municipio para ver sus valores', muniNote:'ERA5 tiene ~25 km de resolución; los valores municipales se interpolan desde esa malla al centro de cada municipio.',
   normalNote:'<b>Normal</b>: media de 1991–2020 para los mismos días del año (normal climática de 30 años).',
   statusPlay: (a,b,g) => `<b>${a} → ${b}</b> · ${g}`, statusIdle: y => `▶ <b>${y}</b> → hoy`,
   barTitle: (y,mm,p,part) => `${y}: ${mm} mm (${p} de lo normal)${part ? ' · año en curso' : ''}`,
@@ -763,11 +764,122 @@ const rgbCss = c => `rgb(${c.map(x=>Math.round(x*255)).join(',')})`;
 
 /* ---------------- 3D: smooth "dune" surfaces, one "view" at a time ---------------- */
 // A view is: Spain (mainland + island insets), one community, or one province/island.
-let renderer, scene, camera, controls, surfMat, groundMat, rainMat, borderMat, outlineMat, frameMat, rain, dirLight, hemi, BASE_DIST = 16;
+let hlMat;
+let renderer, scene, camera, controls, surfMat, surfDepthMat, groundMat, rainMat, borderMat, outlineMat, frameMat, rain, dirLight, hemi, BASE_DIST = 16;
 const TOP = .004, HMAX = .9, HOME = new THREE.Vector3(0.6, 0, 2.1), HOME_DIR = new THREE.Vector3(0, 15.6, 14.1).normalize();
 let curH, tgtH, curC, tgtC, rainCDF, GROUPS = [], cellG, cellV, cellX, cellZ, borders, outline, frames, VIEW = null, viewObjs = [], labelEls = [];
 const gx = (g, lon) => g.ox + (lon - g.lonC)*g.cos*g.k, gz = (g, lat) => g.oz - (lat - g.latC)*g.k;
 const glon = (g, x) => g.lonC + (x - g.ox)/(g.cos*g.k), glat = (g, z) => g.latC - (z - g.oz)/g.k;
+
+/* ---------------- GPU surface: heights, colours and normals are computed in the vertex shader ----------------
+   Each vertex carries up to 16 nearby cell indices (aI0..aI3), its edge fade + fade gradient (aFade) and the
+   gaussian width in world units (aSig). The CPU only writes current cell heights/colours into a tiny texture. */
+const KMAX = 16;
+const SURF_GLSL = `
+uniform sampler2D uCells; uniform float uNC; uniform vec3 uLand; uniform float uTop;
+attribute vec4 aI0; attribute vec4 aI1; attribute vec4 aI2; attribute vec4 aI3; attribute vec4 aFade; attribute float aSig;
+void sAcc(float idx, vec2 p, float k, inout float A, inout float B, inout vec2 gA, inout vec2 gB, inout vec3 C){
+  if (idx < 0.0) return;
+  float u = (idx + 0.5) / uNC;
+  vec4 c0 = texture2D(uCells, vec2(u, 0.25)); vec4 c1 = texture2D(uCells, vec2(u, 0.75));
+  vec2 d = p - c0.xy; float w = exp(-dot(d, d) * k); vec2 gw = -2.0 * k * d * w;
+  A += w * c0.z; B += w; gA += gw * c0.z; gB += gw; C += w * c1.rgb;
+}
+void surf(vec2 p, out float h, out vec2 grad, out vec3 col){
+  float k = 1.0 / (2.0 * aSig * aSig);
+  float A = 0.0, B = 0.0; vec2 gA = vec2(0.0), gB = vec2(0.0); vec3 C = vec3(0.0);
+  sAcc(aI0.x,p,k,A,B,gA,gB,C); sAcc(aI0.y,p,k,A,B,gA,gB,C); sAcc(aI0.z,p,k,A,B,gA,gB,C); sAcc(aI0.w,p,k,A,B,gA,gB,C);
+  sAcc(aI1.x,p,k,A,B,gA,gB,C); sAcc(aI1.y,p,k,A,B,gA,gB,C); sAcc(aI1.z,p,k,A,B,gA,gB,C); sAcc(aI1.w,p,k,A,B,gA,gB,C);
+  sAcc(aI2.x,p,k,A,B,gA,gB,C); sAcc(aI2.y,p,k,A,B,gA,gB,C); sAcc(aI2.z,p,k,A,B,gA,gB,C); sAcc(aI2.w,p,k,A,B,gA,gB,C);
+  sAcc(aI3.x,p,k,A,B,gA,gB,C); sAcc(aI3.y,p,k,A,B,gA,gB,C); sAcc(aI3.z,p,k,A,B,gA,gB,C); sAcc(aI3.w,p,k,A,B,gA,gB,C);
+  float S; vec2 gS; vec3 cc;
+  if (B > 1e-6){ S = A / B; gS = (gA * B - A * gB) / (B * B); cc = C / B; }
+  else if (aI0.x >= 0.0){ float u = (aI0.x + 0.5) / uNC; S = texture2D(uCells, vec2(u, 0.25)).z; gS = vec2(0.0); cc = texture2D(uCells, vec2(u, 0.75)).rgb; }
+  else { S = 0.0; gS = vec2(0.0); cc = uLand; }
+  h = aFade.x * S; grad = aFade.zw * S + aFade.x * gS;
+  col = mix(uLand, cc, aFade.y);
+}`;
+const U = {uCells: {value: null}, uNC: {value: 1}, uLand: {value: new THREE.Vector3(.9, .88, .84)}, uTop: {value: TOP}};
+function patchSurface(mat, depth){
+  mat.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, U);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\n' + SURF_GLSL);
+    if (depth){
+      sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', 'float sh_; vec2 sg_; vec3 sc_; surf(position.xz, sh_, sg_, sc_);\nvec3 transformed = vec3(position.x, uTop + sh_, position.z);');
+    } else {
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <color_vertex>', 'float sh_; vec2 sg_; vec3 sc_; surf(position.xz, sh_, sg_, sc_);\nvColor = pow(max(sc_, vec3(0.0)), vec3(2.2));')
+        .replace('#include <beginnormal_vertex>', 'vec3 objectNormal = normalize(vec3(-sg_.x, 1.0, -sg_.y));')
+        .replace('#include <begin_vertex>', 'vec3 transformed = vec3(position.x, uTop + sh_, position.z);');
+    }
+  };
+  mat.customProgramCacheKey = () => depth ? 'surf-depth' : 'surf';
+  return mat;
+}
+function lineMaterial(opacity){
+  return new THREE.ShaderMaterial({
+    uniforms: Object.assign({uColor: {value: new THREE.Vector3(0, 0, 0)}, uOpacity: {value: opacity}}, U),
+    vertexShader: SURF_GLSL + `
+      void main(){ float h; vec2 g; vec3 c; surf(position.xz, h, g, c);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, uTop + h + 0.012, position.z, 1.0); }`,
+    fragmentShader: `uniform vec3 uColor; uniform float uOpacity; void main(){ gl_FragColor = vec4(uColor, uOpacity); }`,
+    transparent: true, depthWrite: false,
+  });
+}
+// cell texture: row 0 = world x, world z, height; row 1 = sRGB colour
+let cellTex = null, cellData = null;
+function makeCellTexture(){
+  if (cellTex) cellTex.dispose();
+  cellData = new Float32Array(NC * 2 * 4);
+  for (let c=0;c<NC;c++){ cellData[c*4] = cellX[c]; cellData[c*4+1] = cellZ[c]; }
+  cellTex = new THREE.DataTexture(cellData, NC, 2, THREE.RGBAFormat, THREE.FloatType);
+  cellTex.minFilter = cellTex.magFilter = THREE.NearestFilter; cellTex.needsUpdate = true;
+  U.uCells.value = cellTex; U.uNC.value = NC;
+}
+function pushCells(){
+  if (!cellData) return;
+  const o = NC*4;
+  for (let c=0;c<NC;c++){ cellData[c*4+2] = curH[c]; cellData[o+c*4] = curC[c*3]; cellData[o+c*4+1] = curC[c*3+1]; cellData[o+c*4+2] = curC[c*3+2]; }
+  cellTex.needsUpdate = true;
+}
+// per-vertex shader attributes from the CPU weight lists (top 16 cells by weight)
+function surfAttributes(g, nx, ny){
+  const {nv, off, idx, wts, fadeH, fadeC, inside} = g;
+  const I = [0,1,2,3].map(() => new Float32Array(nv*4).fill(-1)), F = new Float32Array(nv*4), S = new Float32Array(nv).fill(g.sigma*g.k);
+  for (let v=0; v<nv; v++){
+    let list = [];
+    for (let k=off[v]; k<off[v+1]; k++) list.push([idx[k], wts[k]]);
+    if (list.length > KMAX) list = list.sort((a, b) => b[1] - a[1]).slice(0, KMAX);
+    list.forEach(([c], k) => { I[k>>2][v*4 + (k&3)] = c; });
+  }
+  // fade and its gradient in world units (central differences on the grid)
+  const dxw = g.res*g.cos*g.k, dzw = -g.res*g.k;
+  for (let j=0;j<ny;j++) for (let i=0;i<nx;i++){ const v = j*nx+i;
+    F[v*4] = fadeH[v]; F[v*4+1] = fadeC[v];
+    if (!inside[v]) continue;
+    const l = i>0 ? fadeH[v-1] : fadeH[v], r = i<nx-1 ? fadeH[v+1] : fadeH[v], d = j>0 ? fadeH[v-nx] : fadeH[v], u = j<ny-1 ? fadeH[v+nx] : fadeH[v];
+    F[v*4+2] = (r - l)/(2*dxw); F[v*4+3] = (u - d)/(2*dzw);
+  }
+  return {I, F, S};
+}
+function applySurfAttributes(geom, A){
+  A.I.forEach((arr, k) => geom.setAttribute('aI' + k, new THREE.BufferAttribute(arr, 4)));
+  geom.setAttribute('aFade', new THREE.BufferAttribute(A.F, 4));
+  geom.setAttribute('aSig', new THREE.BufferAttribute(A.S, 1));
+}
+// CPU height of one vertex (labels, rain, picking) — same maths as the shader, without the normal
+function surfYLive(gi, v){
+  const g = GROUPS[gi]; if (!g || !g.inside[v]) return TOP;
+  let h = 0; for (let k=g.off[v]; k<g.off[v+1]; k++) h += g.wts[k]*curH[g.idx[k]];
+  return TOP + h*g.fadeH[v];
+}
+// refresh CPU positions (for picking) once the dunes have settled
+function settleGeometry(){
+  for (const g of GROUPS){
+    for (let v=0; v<g.nv; v++) if (g.inside[v]) g.pos[v*3+1] = surfYLive(GROUPS.indexOf(g), v);
+    g.geom.attributes.position.needsUpdate = true; g.geom.computeBoundingSphere();
+  }
+}
 
 function inRings(rings, lon, lat){
   let ins = false;
@@ -893,46 +1005,29 @@ function buildSurface(g){
   for (const c of mine){ cellG[c] = GROUPS.length; cellV[c] = vertAt(CELLS[c].lon, CELLS[c].lat); cellX[c] = gx(g, CELLS[c].lon); cellZ[c] = gz(g, CELLS[c].lat); }
   Object.assign(g, {nv, inside, fadeH, fadeC, off, idx: Int32Array.from(idx), wts: Float32Array.from(wts), pos, col, geom, vertAt,
     box: [gx(g, lo0), gx(g, lo1), gz(g, la1), gz(g, la0)]});
+  g.A = surfAttributes(g, nx, ny); applySurfAttributes(geom, g.A);
   g.mesh = new THREE.Mesh(geom, surfMat); g.mesh.castShadow = true; g.mesh.receiveShadow = true; g.mesh.userData.g = GROUPS.length;
+  g.mesh.customDepthMaterial = surfDepthMat; g.mesh.frustumCulled = false;
   GROUPS.push(g); scene.add(g.mesh); viewObjs.push(g.mesh);
 }
-function updateSurfaces(){
-  for (const g of GROUPS){
-    const {nv, inside, fadeH, fadeC, off, idx, wts, pos, col} = g;
-    for (let v=0; v<nv; v++){
-      if (!inside[v]) continue;
-      let h = 0, r = 0, gg = 0, b = 0;
-      for (let k=off[v]; k<off[v+1]; k++){ const c = idx[k], w = wts[k]; h += w*curH[c]; r += w*curC[c*3]; gg += w*curC[c*3+1]; b += w*curC[c*3+2]; }
-      pos[v*3+1] = TOP + h * fadeH[v];
-      const f = fadeC[v];
-      // vertex colours are read as linear: convert from sRGB (approx.)
-      col[v*3]   = Math.pow(LAND_RGB[0] + (r  - LAND_RGB[0])*f, 2.2);
-      col[v*3+1] = Math.pow(LAND_RGB[1] + (gg - LAND_RGB[1])*f, 2.2);
-      col[v*3+2] = Math.pow(LAND_RGB[2] + (b  - LAND_RGB[2])*f, 2.2);
-    }
-    g.geom.attributes.position.needsUpdate = true; g.geom.attributes.color.needsUpdate = true;
-    g.geom.computeVertexNormals();
-  }
-  for (const L of [borders, outline]) if (L) drape(L);
-}
-const surfY = (gi, v) => GROUPS[gi].pos[v*3+1];
+const surfY = surfYLive;
 
 /* lines draped on the dunes: inner borders (communities / provinces) and the outline */
-function lineSet(pairs, mat){
+function lineSet(pairs, mat, step=.8){
   const pts = [], ref = [];
   for (const [gi, ring] of pairs){ const g = GROUPS[gi];
     for (let k=1;k<ring.length;k++){
-      const [x0,y0] = ring[k-1], [x1,y1] = ring[k], n = Math.max(1, Math.ceil(Math.hypot(x1-x0, y1-y0)/(g.res*.8)));
+      const [x0,y0] = ring[k-1], [x1,y1] = ring[k], n = Math.max(1, Math.ceil(Math.hypot(x1-x0, y1-y0)/(g.res*step)));
       for (let s=0;s<n;s++) for (const t of [s/n, (s+1)/n]){ const lon = x0+(x1-x0)*t, lat = y0+(y1-y0)*t; pts.push(gx(g,lon), 0, gz(g,lat)); ref.push(gi, g.vertAt(lon, lat)); }
     } }
+  const n = pts.length/3, I = [0,1,2,3].map(() => new Float32Array(n*4)), F = new Float32Array(n*4), S = new Float32Array(n);
+  for (let i=0;i<n;i++){ const A = GROUPS[ref[i*2]].A, v = ref[i*2+1];
+    for (let k=0;k<4;k++) for (let q=0;q<4;q++) I[k][i*4+q] = A.I[k][v*4+q];
+    for (let q=0;q<4;q++) F[i*4+q] = A.F[v*4+q]; S[i] = A.S[v]; }
   const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-  const L = new THREE.LineSegments(bg, mat); L.userData.ref = Int32Array.from(ref); L.frustumCulled = false;
+  applySurfAttributes(bg, {I, F, S});
+  const L = new THREE.LineSegments(bg, mat); L.frustumCulled = false;
   scene.add(L); viewObjs.push(L); return L;
-}
-function drape(L){
-  const p = L.geometry.attributes.position.array, ref = L.userData.ref;
-  for (let i=0, n=p.length/3; i<n; i++) p[i*3+1] = surfY(ref[i*2], ref[i*2+1]) + .012;
-  L.geometry.attributes.position.needsUpdate = true;
 }
 function buildFrames(){
   const pts = [];
@@ -987,7 +1082,8 @@ function regionDS(j){
   // per sub-unit sparse weights, for the list in the side panel
   const units = j.units.map((u, k) => { const w = []; j.points.forEach((p, c) => { const e = p.u.find(x => x[0] === k); if (e) w.push([c, e[1]*Math.cos(p.lat*Math.PI/180)]); });
     const t = w.reduce((a, b) => a + b[1], 0); return {name: u.name, w: w.map(([c, x]) => [c, x/t])}; });
-  return {kind:'region', name: j.name, nc: n, cells, D: j.D, CL: j.CL, W, yearly: j.yearly, normal: j.normal, units};
+  const munis = j.munis.map(m => ({name: m.n, rings: m.r, w: m.w}));
+  return {kind:'region', name: j.name, nc: n, cells, D: j.D, CL: j.CL, W, yearly: j.yearly, normal: j.normal, units, munis};
 }
 function unitDS(j, k){
   const u = j.units[k];
@@ -1000,7 +1096,11 @@ function unitDS(j, k){
   const Dn = new Uint8Array(ND*n), Cn = new Uint16Array(365*n);
   for (let d=0; d<ND; d++) for (let c=0;c<n;c++) Dn[d*n+c] = j.D[d*nc0 + sel[c]];
   for (let d=0; d<365; d++) for (let c=0;c<n;c++) Cn[d*n+c] = j.CL[d*nc0 + sel[c]];
-  return {kind:'unit', name: u.name, region: j.name, nc: n, D: Dn, CL: Cn, W: w.map(x => x/s),
+  // municipality weights point at community-wide indices: remap to this subset
+  const at = new Int32Array(nc0).fill(-1); sel.forEach((c, k) => at[c] = k);
+  const munis = u.munis.map(m => { const w2 = m.w.filter(([c]) => at[c] >= 0).map(([c, x]) => [at[c], x]); const t = w2.reduce((a, b) => a + b[1], 0) || 1;
+    return {name: m.n, rings: m.r, w: w2.map(([c, x]) => [c, x/t])}; });
+  return {kind:'unit', name: u.name, region: j.name, nc: n, D: Dn, CL: Cn, W: w.map(x => x/s), munis,
     cells: sel.map(c => ({lat: j.points[c].lat, lon: j.points[c].lon, group: 'detail', size: .25, name: u.name, region: j.name})),
     yearly: j.yearly.map(row => sel.map(c => row[c])), normal: sel.map(c => j.normal[c])};
 }
@@ -1013,7 +1113,7 @@ function clearView(){
 }
 function buildView(spec){
   clearView();
-  let inner = [], outer = [], labels = [];
+  let inner = [], outer = [], labels = [], muniPairs = [];
   if (spec.kind === 'nation'){
     useDS(nationDS());
     nationGroups().forEach(buildSurface);
@@ -1027,8 +1127,11 @@ function buildView(spec){
     buildSurface(fitGroup(rings, 'detail'));
     rings.forEach(ring => outer.push([0, ring]));
     if (spec.kind === 'region') j.units.forEach((u, k) => { u.rings.forEach(ring => inner.push([0, ring])); labels.push({text: u.name, lon: u.label[0], lat: u.label[1], unit: k}); });
+    if (DS.munis.length && !(spec.kind === 'region' && j.units.length)) DS.munis.forEach(m => m.rings.forEach(ring => muniPairs.push([0, ring])));
   }
-  borders = inner.length ? lineSet(inner, borderMat) : null;
+  makeCellTexture(); pushCells();
+  borders = inner.length ? lineSet(inner, borderMat) : muniPairs.length ? lineSet(muniPairs, borderMat, 2) : null;
+  hlLine = null;
   outline = outer.length ? lineSet(outer, outlineMat) : null;
   labelEls = labels.map(L => { const e = document.createElement('button'); e.className = 'lbl'; e.textContent = L.text; e.tabIndex = -1;
     e.onclick = () => openView({kind:'unit', data: spec.data, unit: L.unit}, null); $('#labels').appendChild(e);
@@ -1058,7 +1161,7 @@ function stepTweens(now){
 const homeDist = () => BASE_DIST * (onResize.f || 1);
 function setFade(a){
   surfMat.opacity = a; surfMat.transparent = a < 1; surfMat.depthWrite = a > .5;
-  borderMat.opacity = .35*a; outlineMat.opacity = .7*a; frameMat.opacity = .9*a;
+  borderMat.uniforms.uOpacity.value = .35*a; outlineMat.uniforms.uOpacity.value = .7*a; hlMat.uniforms.uOpacity.value = a; frameMat.opacity = .9*a;
   $('#labels').style.opacity = a;
 }
 let busy = false;
@@ -1084,12 +1187,12 @@ async function openView(spec, focus){
   const oc = outline ? outline.geometry.attributes.position.count : 0;
   if (outline) outline.geometry.setDrawRange(0, 0);
   surfMat.opacity = 1; surfMat.transparent = false; surfMat.depthWrite = true;
-  borderMat.opacity = 0; outlineMat.opacity = .7; frameMat.opacity = 0; $('#labels').style.opacity = 0;
+  borderMat.uniforms.uOpacity.value = 0; outlineMat.uniforms.uOpacity.value = .7; frameMat.opacity = 0; $('#labels').style.opacity = 0;
   const pStart = camera.position.clone();
   await Promise.all([
     tween(1100, p => camera.position.lerpVectors(pStart, HOME.clone().addScaledVector(HOME_DIR, hd), p)),
     tween(1000, (e, p) => { if (outline) outline.geometry.setDrawRange(0, Math.floor(oc*p/2)*2); }),
-    tween(600, p => { borderMat.opacity = .35*p; frameMat.opacity = .9*p; $('#labels').style.opacity = p; }, 700),
+    tween(600, p => { borderMat.uniforms.uOpacity.value = .35*p; frameMat.opacity = .9*p; $('#labels').style.opacity = p; }, 700),
   ]);
   if (outline) outline.geometry.setDrawRange(0, Infinity);
   busy = false; document.body.classList.remove('busy');
@@ -1107,7 +1210,7 @@ function renderCrumbs(){
   c.innerHTML = '';
   items.forEach((it, k) => { if (k) c.append(Object.assign(document.createElement('span'), {className:'sep', textContent:'›'}));
     const e = document.createElement(it.go ? 'button' : 'span'); e.textContent = it.label; if (it.go) e.onclick = it.go; else e.className = 'cur'; c.append(e); });
-  const hint = VIEW.kind === 'nation' ? t('clickRegion') : VIEW.kind === 'region' && VIEW.data.units.length ? t(VIEW.data.name === 'Baleares' ? 'clickIsland' : 'clickProv') : '';
+  const hint = VIEW.kind === 'nation' ? t('clickRegion') : VIEW.kind === 'region' && VIEW.data.units.length ? t(VIEW.data.name === 'Baleares' ? 'clickIsland' : 'clickProv') : DS.munis && DS.munis.length ? t('hoverMuni') : '';
   c.append(Object.assign(document.createElement('span'), {className:'hint', textContent: hint}));
   $('#c-area').textContent = VIEW.kind === 'nation' ? t('spain') : VIEW.kind === 'region' ? regionName(VIEW.data.name) : VIEW.data.units[VIEW.unit].name;
 }
@@ -1138,9 +1241,9 @@ function initScene(){
   groundMat = new THREE.ShadowMaterial({opacity:.1});
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), groundMat); ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
 
-  surfMat = new THREE.MeshStandardMaterial({vertexColors:true, roughness:.92, metalness:0});
-  borderMat = new THREE.LineBasicMaterial({transparent:true, opacity:.35});
-  outlineMat = new THREE.LineBasicMaterial({transparent:true, opacity:.7});
+  surfMat = patchSurface(new THREE.MeshStandardMaterial({vertexColors:true, roughness:.92, metalness:0}), false);
+  surfDepthMat = patchSurface(new THREE.MeshDepthMaterial({depthPacking: THREE.RGBADepthPacking}), true);
+  borderMat = lineMaterial(.35); outlineMat = lineMaterial(.7); hlMat = lineMaterial(1);
   frameMat = new THREE.LineBasicMaterial({transparent:true, opacity:.9});
 
   const NR = reduced ? 0 : 420;
@@ -1156,7 +1259,9 @@ function initScene(){
 function applyTheme(){
   buildRamps();
   scene.background = new THREE.Color(css('--bg'));
-  rainMat.color.set(css('--rain')); borderMat.color.set(css('--ink')); outlineMat.color.set(css('--ink')); frameMat.color.set(css('--line'));
+  rainMat.color.set(css('--rain')); frameMat.color.set(css('--line'));
+  borderMat.uniforms.uColor.value.fromArray(hex2rgb(css('--ink'))); outlineMat.uniforms.uColor.value.fromArray(hex2rgb(css('--ink'))); hlMat.uniforms.uColor.value.fromArray(hex2rgb(css('--ink')));
+  U.uLand.value.fromArray(LAND_RGB);
   const sa = parseFloat(css('--shadow-a')) || .1, dark = sa > .2;
   groundMat.opacity = sa;
   hemi.intensity = dark ? .55 : .8; dirLight.intensity = dark ? .75 : .85; hemi.groundColor.set(dark ? 0x1a2224 : 0xcfd6d8);
@@ -1191,11 +1296,12 @@ function pickAt(ev){
   if (VIEW.kind === 'nation'){
     name = g.id === 'baleares' ? 'Baleares' : g.id === 'canarias' ? 'Canarias' : (geo.regions.find(R => inRings(R.rings, lon, lat)) || {}).name;
     if (name) target = {kind:'region', name};
-  } else if (VIEW.kind === 'region'){
+  } else if (VIEW.kind === 'region' && VIEW.data.units.length){
     const k = VIEW.data.units.findIndex(u => inRings(u.rings, lon, lat));
     if (k >= 0){ name = VIEW.data.units[k].name; target = {kind:'unit', data: VIEW.data, unit: k}; }
   }
-  return {cell: best, point: hit.point, target, name, x: ev.clientX - r.left, y: ev.clientY - r.top, w: r.width};
+  const muni = DS.munis && !(VIEW.kind === 'region' && VIEW.data.units.length) ? DS.munis.find(m => inRings(m.rings, lon, lat)) : null;
+  return {cell: best, point: hit.point, target, name, muni, x: ev.clientX - r.left, y: ev.clientY - r.top, w: r.width};
 }
 function setupPointer(){
   const tip = $('#tip'), el = renderer.domElement;
@@ -1204,12 +1310,12 @@ function setupPointer(){
     if (busy){ tip.hidden = true; return; }
     const p = pickAt(ev); last = p;
     el.style.cursor = p && p.target ? 'pointer' : '';
-    if (!p){ tip.hidden = true; return; }
+    if (!p){ tip.hidden = true; highlight(null); return; }
     tip.hidden = false; fillTip(p);
     tip.style.left = Math.min(p.x, p.w - 200) + 'px'; tip.style.top = p.y + 'px';
   };
   el.addEventListener('pointermove', e => { if (e.buttons === 0) show(e); });
-  el.addEventListener('pointerleave', () => { tip.hidden = true; last = null; });
+  el.addEventListener('pointerleave', () => { tip.hidden = true; last = null; highlight(null); });
   el.addEventListener('pointerdown', e => { down = {x: e.clientX, y: e.clientY, t: performance.now()}; });
   el.addEventListener('pointerup', e => {
     const click = down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 6 && performance.now() - down.t < 500; down = null;
@@ -1220,7 +1326,21 @@ function setupPointer(){
   });
   state.tipRefresh = () => { if (last && !tip.hidden) fillTip(last); };
 }
+const muniVals = m => { let v=0, n=0, rv=0, rn=0; for (const [c, w] of m.w){ v += w*VAL[c]; n += w*NOR[c]; rv += w*RVAL[c]; rn += w*RNOR[c]; } return {v, n, r: rv/Math.max(rn, 1e-6)}; };
+let hlLine = null, hlMuni = null;
+function highlight(m){
+  if (m === hlMuni) return; hlMuni = m;
+  if (hlLine){ scene.remove(hlLine); hlLine.geometry.dispose(); viewObjs = viewObjs.filter(o => o !== hlLine); hlLine = null; }
+  if (m) hlLine = lineSet(m.rings.map(ring => [0, ring]), hlMat, 1);
+}
 function fillTip(p){
+  highlight(p.muni || null);
+  if (p.muni){ const o = muniVals(p.muni);
+    $('#tip').innerHTML = `<b>${p.muni.name}</b>
+      <div class="r"><span>${t('tipRain')}</span><span>${fmt(o.v, o.v < 10 ? 1 : 0)} mm</span></div>
+      <div class="r"><span>${t('tipNormal')}</span><span>${fmt(o.n, o.n < 10 ? 1 : 0)} mm</span></div>
+      <div class="r"><span>${t('tipRatio')}${state.g==='day' ? t('tip30') : ''}</span><span>${pct(o.r*100)}</span></div>`;
+    return; }
   const c = p.cell, cell = CELLS[c], r = RVAL[c]/Math.max(RNOR[c], 1e-6);
   const title = p.name ? (VIEW.kind === 'nation' ? regionName(p.name) : p.name) : (cell.name || regionName(cell.region));
   $('#tip').innerHTML = `<b>${title}</b>
@@ -1261,42 +1381,42 @@ function updateCard(r){
 // provinces / islands of the open community, with their rainfall for the current period
 function renderUnits(){
   const box = $('#c-units');
-  if (!DS || !DS.units || !DS.units.length){ box.hidden = true; return; }
-  const out = [0,0,0], rows = DS.units.map((u, k) => { let v=0, rv=0, rn=0; for (const [c, w] of u.w){ v += w*VAL[c]; rv += w*RVAL[c]; rn += w*RNOR[c]; }
-    return {k, name: u.name, v, r: rv/Math.max(rn, 1e-6)}; }).sort((a, b) => b.r - a.r);
+  const list = DS && DS.units && DS.units.length ? {rows: DS.units, key: VIEW.data.name === 'Baleares' ? 'unitsIsl' : 'unitsProv', open: true}
+    : DS && DS.munis && DS.munis.length ? {rows: DS.munis, key: 'unitsMuni', open: false} : null;
+  if (!list){ box.hidden = true; return; }
+  const out = [0,0,0], rows = list.rows.map((u, k) => { const o = muniVals(u); return {k, name: u.name, v: o.v, r: o.r}; }).sort((a, b) => b.r - a.r);
   box.hidden = false;
-  box.innerHTML = `<div class="lab">${t(VIEW.data.name === 'Baleares' ? 'unitsIsl' : 'unitsProv')}</div>` + rows.map(o =>
-    `<button data-u="${o.k}"><i style="background:${rgbCss(colorRatio(o.r, out))}"></i><span>${o.name}</span><span class="v">${fmt(o.v, o.v < 10 ? 1 : 0)} mm</span><b>${pct(o.r*100)}</b></button>`).join('');
-  box.querySelectorAll('button').forEach(b => b.onclick = () => {
-    const k = +b.dataset.u, L = labelEls.find(l => l.unit === k);
-    openView({kind:'unit', data: VIEW.data, unit: k}, L ? new THREE.Vector3(L.x, 0, L.z) : null); });
+  box.innerHTML = `<div class="lab">${t(list.key)} · ${rows.length}</div>` + rows.map(o =>
+    `<button data-u="${o.k}"><i style="background:${rgbCss(colorRatio(o.r, out))}"></i><span>${o.name}</span><span class="v">${fmt(o.v, o.v < 10 ? 1 : 0)} mm</span><b>${pct(o.r*100)}</b></button>`).join('') +
+    (list.open ? '' : `<p class="lnote">${t('muniNote')}</p>`);
+  box.querySelectorAll('button').forEach(b => {
+    const k = +b.dataset.u;
+    if (list.open) b.onclick = () => { const L = labelEls.find(l => l.unit === k); openView({kind:'unit', data: VIEW.data, unit: k}, L ? new THREE.Vector3(L.x, 0, L.z) : null); };
+    else { b.onmouseenter = () => highlight(DS.munis[k]); b.onmouseleave = () => highlight(null); b.onfocus = b.onmouseenter; b.onblur = b.onmouseleave; }
+  });
 }
 const yearOfPeriod = (g, i) => dateOf(G[g].a[i]).getUTCFullYear();
 function updateTimeline(){
   const s = $('#slider'); s.max = G[state.g].a.length - 1; s.value = state.i;
   s.style.setProperty('--p', (state.i / Math.max(1, s.max) * 100) + '%');
-  const yi = yearOfPeriod(state.g, state.i) - meta.years[0];
-  document.querySelectorAll('#bars i').forEach((b,k) => b.classList.toggle('cur', k === yi));
+  if (state.playing || scrubbing) showBubble(true); else if (!$('#bubble').hidden) showBubble(false);
   const endY = meta.years[meta.years.length-1];
   $('#status').innerHTML = state.playing ? t('statusPlay', state.startYear, endY, t('gran')[state.g]) : t('statusIdle', yearOfPeriod(state.g, state.i));
 }
 function drawBars(){
-  const box = $('#bars'); box.innerHTML = '';
-  if (!DS) return;
-  const nat = DS.series.nat, max = Math.max(...nat), n = DS.series.normal, partial = DS.series.partial, out = [0,0,0];
-  nat.forEach((v, k) => {
-    const i = document.createElement('i');
-    const ratio = (k === nat.length-1 && partial) ? partial.mm/partial.normal_mm : v/n;
-    i.style.height = (v/max*100) + '%'; i.style.background = rgbCss(colorRatio(ratio, out));
-    i.title = t('barTitle', meta.years[k], fmt(v), pct(ratio*100), k===nat.length-1 && partial);
-    i.addEventListener('click', () => { stop(); gotoYear(meta.years[k]); });
-    box.appendChild(i);
-  });
-  const nl = document.createElement('div'); nl.className = 'nline'; nl.style.bottom = (n/max*100) + '%'; box.appendChild(nl);
   const yb = $('#years'); yb.innerHTML = '';
   const y0 = meta.years[0], y1 = meta.years[meta.years.length-1];
-  for (let y = Math.ceil(y0/10)*10; y <= y1; y += 10){ const s = document.createElement('span'); s.textContent = y; s.style.left = ((y - y0 + .5)/(y1 - y0 + 1)*100) + '%'; yb.appendChild(s); }
+  for (let y = Math.ceil(y0/10)*10; y <= y1; y += 10){ const e = document.createElement('span'); e.textContent = y; e.style.left = ((y - y0 + .5)/(y1 - y0 + 1)*100) + '%'; yb.appendChild(e); }
 }
+// the period label rides above the slider thumb while scrubbing or playing
+let bubbleT = 0;
+function showBubble(hold){
+  const b = $('#bubble'), s = $('#slider'), p = state.i / Math.max(1, +s.max);
+  b.textContent = label(state.g, state.i).t; b.hidden = false;
+  b.style.left = `calc(${p*100}% + ${9 - p*18}px)`;
+  clearTimeout(bubbleT); if (!hold) bubbleT = setTimeout(() => { if (!state.playing && !scrubbing) b.hidden = true; }, 900);
+}
+let scrubbing = false;
 function drawLegend(){
   const cv = $('#lg'), ctx = cv.getContext('2d'), out = [0,0,0], ticks = $('#lg-ticks');
   for (let x=0;x<cv.width;x++){ const t = x/(cv.width-1);
@@ -1329,7 +1449,9 @@ function play(){
 function stop(){ state.playing = false; $('#play-ico').innerHTML = ICON_PLAY; $('#play').setAttribute('aria-label', t('play')); updateTimeline(); }
 function toast(t, s, ms=2200){ const el = $('#toast'); el.innerHTML = `${t}<small>${s}</small>`; el.hidden = false; el.style.opacity = 1;
   clearTimeout(toast.t); toast.t = setTimeout(() => { el.style.opacity = 0; setTimeout(() => el.hidden = true, 500); }, ms); }
-function reachedEnd(){ stop(); toast(t('reached'), t('dataEnds', label(state.g, state.i).t), 1800); setTimeout(openStory, 1900); }
+// the water story opens by itself only the first time the data reaches today
+let storySeen = (() => { try { return localStorage.getItem('storySeen') === '1'; } catch(e){ return false; } })();
+function reachedEnd(){ stop(); toast(t('reached'), t('dataEnds', label(state.g, state.i).t), 1800); if (!storySeen) setTimeout(openStory, 1900); }
 
 /* ---------------- loop ---------------- */
 let lastT = performance.now();
@@ -1345,8 +1467,8 @@ function frame(now){
     let md = 0;
     for (let c=0;c<NC;c++){ const d = tgtH[c] - curH[c]; curH[c] += d*k; md = Math.max(md, Math.abs(d));
       for (let j=0;j<3;j++){ const e = tgtC[c*3+j] - curC[c*3+j]; curC[c*3+j] += e*k; md = Math.max(md, Math.abs(e)); } }
-    updateSurfaces();
-    if (md < 1e-3) state.moving = false;
+    pushCells();
+    if (md < 1e-3){ state.moving = false; settleGeometry(); }
   }
   stepTweens(now);
   stepRain(dt);
@@ -1377,7 +1499,8 @@ function stepRain(dt){
 /* ---------------- story ---------------- */
 let sIdx = 0, sTimer = null, sAuto = true;
 const SCENE_MS = [15000, 13000, 14000, 16000, 20000, 20000];
-function openStory(){ $('#story').hidden = false; sAuto = true; $('#dots').classList.remove('paused'); goScene(0); }
+function openStory(){ storySeen = true; try { localStorage.setItem('storySeen', '1'); } catch(e){}
+  $('#story').hidden = false; sAuto = true; $('#dots').classList.remove('paused'); goScene(0); }
 function closeStory(){ $('#story').hidden = true; clearTimeout(sTimer); }
 function goScene(n){
   const sc = [...document.querySelectorAll('.scene')];
@@ -1446,7 +1569,10 @@ function wire(){
   document.querySelectorAll('[data-g]').forEach(b => b.onclick = () => setGran(b.dataset.g));
   document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { state.speed = +b.dataset.s; document.querySelectorAll('[data-s]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
   $('#m-mm').onclick = () => setMode('mm'); $('#m-ratio').onclick = () => setMode('ratio');
-  $('#slider').addEventListener('input', e => { stop(); state.i = +e.target.value; refresh(false); });
+  const sl = $('#slider');
+  sl.addEventListener('pointerdown', () => { scrubbing = true; });
+  addEventListener('pointerup', () => { if (scrubbing){ scrubbing = false; showBubble(false); } });
+  sl.addEventListener('input', e => { if (state.playing) stop(); state.i = +e.target.value; refresh(false); showBubble(scrubbing); });
   $('#open-story').onclick = () => { stop(); openStory(); };
   $('#close-story').onclick = closeStory; $('#back-map').onclick = closeStory;
   $('#replay').onclick = () => { closeStory(); setGran('year'); gotoYear(meta.years[0]); toast(t('pickYear'), t('pickYearSub')); };
