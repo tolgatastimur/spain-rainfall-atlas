@@ -1,0 +1,104 @@
+[
+{
+"name": "Castilla-Leon",
+"file": "castilla-leon.json",
+"units": 9,
+"points": 203
+},
+{
+"name": "Cataluña",
+"file": "cataluna.json",
+"units": 4,
+"points": 75
+},
+{
+"name": "Murcia",
+"file": "murcia.json",
+"units": 0,
+"points": 30
+},
+{
+"name": "La Rioja",
+"file": "la-rioja.json",
+"units": 0,
+"points": 16
+},
+{
+"name": "Baleares",
+"file": "baleares.json",
+"units": 4,
+"points": 20
+},
+{
+"name": "Canarias",
+"file": "canarias.json",
+"units": 2,
+"points": 31
+},
+{
+"name": "Cantabria",
+"file": "cantabria.json",
+"units": 0,
+"points": 21
+},
+{
+"name": "Andalucia",
+"file": "andalucia.json",
+"units": 8,
+"points": 175
+},
+{
+"name": "Asturias",
+"file": "asturias.json",
+"units": 0,
+"points": 30
+},
+{
+"name": "Valencia",
+"file": "valencia.json",
+"units": 3,
+"points": 59
+},
+{
+"name": "Navarra",
+"file": "navarra.json",
+"units": 0,
+"points": 28
+},
+{
+"name": "Galicia",
+"file": "galicia.json",
+"units": 4,
+"points": 69
+},
+{
+"name": "Aragon",
+"file": "aragon.json",
+"units": 3,
+"points": 105
+},
+{
+"name": "Madrid",
+"file": "madrid.json",
+"units": 0,
+"points": 24
+},
+{
+"name": "Extremadura",
+"file": "extremadura.json",
+"units": 2,
+"points": 89
+},
+{
+"name": "Castilla-La Mancha",
+"file": "castilla-la-mancha.json",
+"units": 5,
+"points": 165
+},
+{
+"name": "Pais Vasco",
+"file": "pais-vasco.json",
+"units": 3,
+"points": 23
+}
+]

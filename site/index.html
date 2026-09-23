@@ -39,6 +39,25 @@ button{cursor:pointer;background:none;border:0;padding:0}
 #app{position:fixed;inset:0;overflow:hidden}
 #stage{position:absolute;inset:0}
 #stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.labels{position:absolute;inset:0;pointer-events:none;overflow:hidden;transition:opacity .3s}
+.lbl{position:absolute;left:0;top:0;pointer-events:auto;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);opacity:.72;white-space:nowrap;text-shadow:0 0 4px var(--bg),0 0 8px var(--bg);padding:2px 4px}
+.lbl:hover{opacity:1;text-decoration:underline}
+.crumbs{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;margin-top:14px;font-size:13px}
+.crumbs button{color:var(--muted);border-bottom:1px solid var(--line)}
+.crumbs button:hover{color:var(--ink)}
+.crumbs .cur{color:var(--ink);font-weight:500}
+.crumbs .sep{color:var(--faint)}
+.crumbs .hint{flex-basis:100%;color:var(--muted);font-size:12px;margin-top:2px}
+.side .area{margin-bottom:6px}
+.units{display:grid;gap:2px;margin-top:16px;padding-top:12px;border-top:1px solid var(--line);max-height:34vh;overflow:auto}
+.units .lab{margin-bottom:4px}
+.units button{display:grid;grid-template-columns:8px 1fr auto 52px;gap:8px;align-items:center;text-align:left;font-size:12.5px;padding:3px 0}
+.units button i{width:8px;height:8px;border-radius:50%}
+.units button .v{color:var(--muted);font-family:var(--f-mono);font-size:11.5px}
+.units button b{font-family:var(--f-mono);font-weight:500;text-align:right}
+.units button:hover span:nth-of-type(1){text-decoration:underline}
+.tip .go{margin-top:6px;color:var(--ink);font-size:11.5px}
+body.busy #stage canvas{cursor:progress}
 .toprow{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
 .tg.lang{gap:10px}
 .tg.lang button{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em}
@@ -191,6 +210,7 @@ input[type=range]::-moz-range-thumb{width:10px;height:10px;border-radius:50%;bac
 @media (max-width:760px){
   .head{top:18px;left:16px;right:16px;max-width:none}
   .head p{display:none}
+  .units{display:none}
   h1{font-size:18px}
   .side{top:auto;left:16px;right:16px;width:auto;bottom:calc(var(--dock-h,120px) + 36px);text-align:left;gap:12px;grid-template-columns:1fr auto;align-items:end}
   .side .legend{width:150px}
@@ -212,6 +232,7 @@ input[type=range]::-moz-range-thumb{width:10px;height:10px;border-radius:50%;bac
 
 <div id="app">
   <div id="stage" data-i18n-aria="ariaStage"></div>
+  <div class="labels" id="labels"></div>
 
   <header class="head">
     <div class="toprow"><span class="lab" data-i18n="eyebrow"></span>
@@ -220,13 +241,16 @@ input[type=range]::-moz-range-thumb{width:10px;height:10px;border-radius:50%;bac
       </div></div>
     <h1 data-i18n="title"></h1>
     <p data-i18n="lede"></p>
+    <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
   </header>
 
   <aside class="side" aria-live="polite">
     <div>
+      <div class="lab area" id="c-area"></div>
       <div class="period" id="c-period">—</div>
       <div class="big" id="c-mm">—</div>
       <div class="ratio" id="c-ratio"></div>
+      <div class="units" id="c-units" hidden></div>
     </div>
     <div class="legend">
       <div class="tg" role="group" data-i18n-aria="ariaMetric">
@@ -444,6 +468,7 @@ tr: {
   yearTotal:'Yıllık toplam', ytd: d => `Yıl başından ${d} tarihine kadar`, monthTotal:'Aylık toplam', monthUntil: d => `Aylık toplam · ${d} tarihine kadar`,
   weekTotal:'Haftalık toplam', dayTotal:'Günlük toplam · oran son 30 güne göre',
   ofNormal: b => `Normalin ${b}`, normal:'normal',
+  spain:'Tüm İspanya', crumbSpain:'İspanya', clickRegion:'Yakınlaşmak için bir topluluğa tıkla', clickProv:'Bir ile tıkla', clickIsland:'Bir adaya tıkla', tipOpen:'Tıkla → yakınlaş', unitsProv:'İller', unitsIsl:'Adalar',
   normalNote:'<b>Normal</b>: aynı gün ve haftaların 1991–2020 ortalaması (30 yıllık iklim normali).',
   statusPlay: (a,b,g) => `<b>${a} → ${b}</b> · ${g}`, statusIdle: y => `▶ <b>${y}</b> → bugün`,
   barTitle: (y,mm,p,part) => `${y}: ${mm} mm (normalin ${p})${part ? ' · yıl devam ediyor' : ''}`,
@@ -507,6 +532,7 @@ en: {
   yearTotal:'Annual total', ytd: d => `Year to date · until ${d}`, monthTotal:'Monthly total', monthUntil: d => `Monthly total · until ${d}`,
   weekTotal:'Weekly total', dayTotal:'Daily total · ratio over the last 30 days',
   ofNormal: b => `${b} of normal`, normal:'normal',
+  spain:'All of Spain', crumbSpain:'Spain', clickRegion:'Click a region to zoom in', clickProv:'Click a province', clickIsland:'Click an island', tipOpen:'Click → zoom in', unitsProv:'Provinces', unitsIsl:'Islands',
   normalNote:'<b>Normal</b>: the 1991–2020 average for the same days of the year (30-year climate normal).',
   statusPlay: (a,b,g) => `<b>${a} → ${b}</b> · ${g}`, statusIdle: y => `▶ <b>${y}</b> → today`,
   barTitle: (y,mm,p,part) => `${y}: ${mm} mm (${p} of normal)${part ? ' · year in progress' : ''}`,
@@ -570,6 +596,7 @@ es: {
   yearTotal:'Total anual', ytd: d => `En lo que va de año · hasta el ${d}`, monthTotal:'Total mensual', monthUntil: d => `Total mensual · hasta el ${d}`,
   weekTotal:'Total semanal', dayTotal:'Total diario · ratio de los últimos 30 días',
   ofNormal: b => `${b} de lo normal`, normal:'normal',
+  spain:'Toda España', crumbSpain:'España', clickRegion:'Haz clic en una comunidad para acercarte', clickProv:'Haz clic en una provincia', clickIsland:'Haz clic en una isla', tipOpen:'Clic → acercar', unitsProv:'Provincias', unitsIsl:'Islas',
   normalNote:'<b>Normal</b>: media de 1991–2020 para los mismos días del año (normal climática de 30 años).',
   statusPlay: (a,b,g) => `<b>${a} → ${b}</b> · ${g}`, statusIdle: y => `▶ <b>${y}</b> → hoy`,
   barTitle: (y,mm,p,part) => `${y}: ${mm} mm (${p} de lo normal)${part ? ' · año en curso' : ''}`,
@@ -653,12 +680,14 @@ async function fetchB64(url, onProg){
   const txt = new TextDecoder().decode(await fetchBin(url, onProg)), bin = atob(txt.trim());
   const out = new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i); return out;
 }
-let meta, geo, D, CL, NC, ND, LUT, W, doyIdx, t0;
+let meta, geo, D, CL, NC, ND, LUT, W, doyIdx, t0, DAILY_NAT, CLIM_NAT, FILES = {};
 async function load(){
-  [meta, geo] = await Promise.all([fetch('data/meta.json').then(r=>r.json()), fetch('data/geo.json').then(r=>r.json())]);
+  let idx;
+  [meta, geo, idx] = await Promise.all(['data/meta.json', 'data/geo.json', 'data/detail/index.json'].map(u => fetch(u).then(r => r.json())));
+  idx.forEach(e => FILES[e.name] = e.file);
   const [d, c] = await Promise.all([fetchB64('data/daily.b64.txt', p => $('#pbar').style.width = (p*100).toFixed(0)+'%'), fetchB64('data/clim.b64.txt', ()=>{})]);
-  D = d; CL = new Uint16Array(c.buffer, c.byteOffset, c.byteLength/2);
-  NC = meta.cells.length; ND = meta.days; W = meta.weights;
+  DAILY_NAT = d; CLIM_NAT = new Uint16Array(c.buffer, c.byteOffset, c.byteLength/2);
+  ND = meta.days;
   LUT = new Float32Array(256); for (let q=0;q<256;q++) LUT[q] = (q/meta.q)**2;
   t0 = Date.parse(meta.start + 'T00:00:00Z');
   doyIdx = new Uint16Array(ND);
@@ -698,8 +727,8 @@ function sumNorm(a, b, out){ out.fill(0, 0, NC); for (let d=a; d<b; d++){ const 
 function compute(g, i){
   const a = G[g].a[i], b = G[g].b[i];
   if (g === 'year'){
-    const y = meta.yearly[i]; for (let c=0;c<NC;c++) VAL[c] = y[c];
-    if (b - a >= 365) for (let c=0;c<NC;c++) NOR[c] = meta.normal_cell[c]; else sumNorm(a, b, NOR);
+    const y = YEARLY[i]; for (let c=0;c<NC;c++) VAL[c] = y[c];
+    if (b - a >= 365) for (let c=0;c<NC;c++) NOR[c] = NORMALC[c]; else sumNorm(a, b, NOR);
     RVAL.set(VAL.subarray(0,NC)); RNOR.set(NOR.subarray(0,NC));
   } else {
     sumDays(a, b, VAL); sumNorm(a, b, NOR);
@@ -732,17 +761,36 @@ const colorMM = (v, g, out) => ramp(MM_RAMP, Math.min(1, mmT(v,g)), out);
 const colorRatio = (r, out) => ramp(RATIO_RAMP, Math.log2(Math.max(r, .05)), out);
 const rgbCss = c => `rgb(${c.map(x=>Math.round(x*255)).join(',')})`;
 
-/* ---------------- 3D: smooth "dune" surfaces — mainland + island insets ---------------- */
-let renderer, scene, camera, controls, surfMat, groundMat, rainMat, borderMat, frameMat, rain, dirLight, hemi, BASE_DIST = 16;
-const TOP = .004, HMAX = .9;
-let curH, tgtH, curC, tgtC, rainCDF, GROUPS = [], cellG, cellV, cellX, cellZ, borders;
-// each group has its own projection: lon/lat -> world x/z, with offset + scale for the insets
-function groupDefs(){ return [
-  {id:'mainland', title:null,              lonC:-3.4,  latC:39.95, ox:0,    oz:0,   k:1,   res:.022, sigma:.3,  fw:.6,  rings:geo.spain},
-  {id:'baleares', title:null,  lonC:2.95,  latC:39.55, ox:5.35, oz:2.3, k:1.6, res:.01,  sigma:.16, fw:.18, rings:geo.islands.baleares.rings, note:'×1,6'},
-  {id:'canarias', title:null, lonC:-15.8, latC:28.55, ox:-4.3, oz:4.35, k:.7,  res:.012, sigma:.16, fw:.18, rings:geo.islands.canarias.rings},
-].map(g => Object.assign(g, {cos: Math.cos(g.latC*Math.PI/180)})); }
+/* ---------------- 3D: smooth "dune" surfaces, one "view" at a time ---------------- */
+// A view is: Spain (mainland + island insets), one community, or one province/island.
+let renderer, scene, camera, controls, surfMat, groundMat, rainMat, borderMat, outlineMat, frameMat, rain, dirLight, hemi, BASE_DIST = 16;
+const TOP = .004, HMAX = .9, HOME = new THREE.Vector3(0.6, 0, 2.1), HOME_DIR = new THREE.Vector3(0, 15.6, 14.1).normalize();
+let curH, tgtH, curC, tgtC, rainCDF, GROUPS = [], cellG, cellV, cellX, cellZ, borders, outline, frames, VIEW = null, viewObjs = [], labelEls = [];
 const gx = (g, lon) => g.ox + (lon - g.lonC)*g.cos*g.k, gz = (g, lat) => g.oz - (lat - g.latC)*g.k;
+const glon = (g, x) => g.lonC + (x - g.ox)/(g.cos*g.k), glat = (g, z) => g.latC - (z - g.oz)/g.k;
+
+function inRings(rings, lon, lat){
+  let ins = false;
+  for (const ring of rings) for (let i=0, j=ring.length-1; i<ring.length; j=i++){
+    const [xi, yi] = ring[i], [xj, yj] = ring[j];
+    if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) ins = !ins;
+  }
+  return ins;
+}
+// national view: mainland + two insets, each with its own projection
+function nationGroups(){ return [
+  {id:'mainland', lonC:-3.4,  latC:39.95, ox:0,    oz:0,    k:1,   res:.022, sigma:.3,  fw:.6,  blur:.09,  rings:geo.spain},
+  {id:'baleares', lonC:2.95,  latC:39.55, ox:5.35, oz:2.3,  k:1.6, res:.01,  sigma:.16, fw:.18, blur:.025, rings:geo.islands.baleares.rings, frame:true},
+  {id:'canarias', lonC:-15.8, latC:28.55, ox:-4.3, oz:4.35, k:.7,  res:.012, sigma:.16, fw:.18, blur:.025, rings:geo.islands.canarias.rings, frame:true},
+].map(g => Object.assign(g, {cos: Math.cos(g.latC*Math.PI/180)})); }
+// detail views: fit the shape into the same stage the whole country uses
+function fitGroup(rings, id){
+  let lo0=180, lo1=-180, la0=90, la1=-90;
+  rings.forEach(r => r.forEach(([x,y]) => { lo0=Math.min(lo0,x); lo1=Math.max(lo1,x); la0=Math.min(la0,y); la1=Math.max(la1,y); }));
+  const latC = (la0+la1)/2, cos = Math.cos(latC*Math.PI/180), w = (lo1-lo0)*cos, h = la1-la0;
+  const k = Math.min(10.5/w, 6.6/h), span = Math.max(lo1-lo0, la1-la0);
+  return {id, lonC:(lo0+lo1)/2, latC, cos, ox:HOME.x, oz:HOME.z - .2, k, res: span/340, sigma:.16, fw: Math.max(.45/k, span/60), blur: .08/k, rings};
+}
 
 function buildSurface(g){
   const RES = g.res;
@@ -750,10 +798,10 @@ function buildSurface(g){
   g.rings.forEach(r => r.forEach(([x,y]) => { lo0=Math.min(lo0,x); lo1=Math.max(lo1,x); la0=Math.min(la0,y); la1=Math.max(la1,y); }));
   lo0 -= RES*2; la0 -= RES*2;
   const nx = Math.ceil((lo1 - lo0)/RES) + 4, ny = Math.ceil((la1 - la0)/RES) + 4, nv = nx*ny;
-  // grid over the group; 1 = land, 2 = coast vertex snapped onto the real coastline, 0 = sea
+  // grid over the group; 1 = land, 2 = coast vertex snapped onto the real coastline, 0 = outside
   const VLON = new Float64Array(nv), VLAT = new Float64Array(nv), inside = new Uint8Array(nv);
   const segs = []; g.rings.forEach(r => { for (let k=1;k<r.length;k++) segs.push(r[k-1][0], r[k-1][1], r[k][0], r[k][1]); });
-  // scanline fill (even-odd): one pass over the coastline per grid row
+  // scanline fill (even-odd): one pass over the outline per grid row
   for (let j=0;j<ny;j++){
     const lat = la0 + j*RES, xs = [];
     for (let k=0;k<segs.length;k+=4){ const y0 = segs[k+1], y1 = segs[k+3];
@@ -763,17 +811,15 @@ function buildSurface(g){
     for (let i=0;i<nx;i++){ const v = j*nx+i, lon = lo0 + i*RES; VLON[v] = lon; VLAT[v] = lat;
       while (n < xs.length && xs[n] < lon) n++; inside[v] = n & 1; }
   }
-  // bucket coastline segments into 0.2° bins for fast nearest-point queries
-  const BIN = .2, bins = new Map(), bkey = (bx, by) => bx*100003 + by;
+  // bucket outline segments into bins for fast nearest-point queries
+  const BIN = Math.max(RES*8, .02), bins = new Map(), bkey = (bx, by) => bx*100003 + by;
   for (let k=0;k<segs.length;k+=4){
     const bx0 = Math.floor(Math.min(segs[k], segs[k+2])/BIN), bx1 = Math.floor(Math.max(segs[k], segs[k+2])/BIN);
     const by0 = Math.floor(Math.min(segs[k+1], segs[k+3])/BIN), by1 = Math.floor(Math.max(segs[k+1], segs[k+3])/BIN);
     for (let bx=bx0; bx<=bx1; bx++) for (let by=by0; by<=by1; by++){ const kk = bkey(bx, by); (bins.get(kk) || bins.set(kk, []).get(kk)).push(k); }
   }
-  // nearest point on the coastline within `lim` degrees (lon scaled by cos lat)
   const nearest = (x, y, lim) => {
-    let bd = lim*lim, bx = x, by = y, hit = false; const seen = new Set();
-    const rx = lim/g.cos;
+    let bd = lim*lim, bx = x, by = y, hit = false; const seen = new Set(), rx = lim/g.cos;
     for (let cx=Math.floor((x-rx)/BIN); cx<=Math.floor((x+rx)/BIN); cx++) for (let cy=Math.floor((y-lim)/BIN); cy<=Math.floor((y+lim)/BIN); cy++){
       const list = bins.get(bkey(cx, cy)); if (!list) continue;
       for (const k of list){ if (seen.has(k)) continue; seen.add(k);
@@ -792,7 +838,7 @@ function buildSurface(g){
     const q = nearest(VLON[v], VLAT[v], near);
     if (q.hit){ VLON[v] = q.x; VLAT[v] = q.y; inside[v] = 2; }
   }
-  // distance to the coast (chamfer) -> dunes rise from exactly zero at the shoreline
+  // distance to the outline -> dunes rise from exactly zero at the edge
   const dist = new Float32Array(nv);
   for (let v=0; v<nv; v++) dist[v] = inside[v] === 1 ? 1e9 : 0;
   const relax = (v, u, w) => { if (dist[u] + w < dist[v]) dist[v] = dist[u] + w; };
@@ -800,33 +846,33 @@ function buildSurface(g){
     if (i>0) relax(v, v-1, 1); if (j>0){ relax(v, v-nx, 1); if (i>0) relax(v, v-nx-1, 1.414); if (i<nx-1) relax(v, v-nx+1, 1.414); } }
   for (let j=ny-1;j>=0;j--) for (let i=nx-1;i>=0;i--){ const v = j*nx+i; if (!dist[v]) continue;
     if (i<nx-1) relax(v, v+1, 1); if (j<ny-1){ relax(v, v+nx, 1); if (i<nx-1) relax(v, v+nx+1, 1.414); if (i>0) relax(v, v+nx-1, 1.414); } }
-  const sm = (a,b,x) => { const t = Math.min(1, Math.max(0, (x-a)/(b-a))); return t*t*(3-2*t); };
-  const fadeH = new Float32Array(nv), fadeC = new Float32Array(nv);
-  // near the shore, replace the grid distance with the exact distance to the coastline (no stair-steps)
+  // near the edge use the exact distance to the outline (no stair-steps)
   for (let v=0; v<nv; v++) if (inside[v] === 1 && dist[v]*RES < g.fw*1.3) dist[v] = nearest(VLON[v], VLAT[v], g.fw*1.3).d/RES;
-  // blur the distance field on land: removes the creases a polygonal coastline leaves (streaks on the slopes)
-  { const R = Math.max(2, Math.round((g.id === 'mainland' ? .09 : .025)/RES)), tmp = new Float32Array(nv), land = v => inside[v] === 1;
+  // blur the distance field on land: removes creases a polygonal outline leaves (streaks on the slopes)
+  { const R = Math.max(2, Math.round(g.blur/RES)), tmp = new Float32Array(nv), land = v => inside[v] === 1;
     for (let pass=0; pass<3; pass++){
       for (let j=0;j<ny;j++) for (let i=0;i<nx;i++){ const v = j*nx+i; if (!land(v)){ tmp[v] = 0; continue; }
         let s=0,n=0; for (let k=-R;k<=R;k++){ const ii=i+k; if (ii>=0&&ii<nx){ s += inside[j*nx+ii] ? dist[j*nx+ii] : 0; n++; } } tmp[v] = s/n; }
       for (let j=0;j<ny;j++) for (let i=0;i<nx;i++){ const v = j*nx+i; if (!land(v)) continue;
         let s=0,n=0; for (let k=-R;k<=R;k++){ const jj=j+k; if (jj>=0&&jj<ny){ s += tmp[jj*nx+i]; n++; } } dist[v] = s/n; }
     } }
+  const sm = (a,b,x) => { const t = Math.min(1, Math.max(0, (x-a)/(b-a))); return t*t*(3-2*t); };
+  const fadeH = new Float32Array(nv), fadeC = new Float32Array(nv);
   for (let v=0; v<nv; v++){ if (!inside[v]) continue; const d = inside[v] === 2 ? 0 : dist[v]*RES;
     fadeH[v] = sm(0, g.fw, d); fadeC[v] = .55 + .45*sm(0, g.fw*.6, d); }
-  // gaussian weights from this group's cells to every inside vertex
-  const mine = []; for (let c=0;c<NC;c++) if (meta.cells[c].group === g.id) mine.push(c);
+  // gaussian weights from this group's cells to every land vertex
+  const mine = []; for (let c=0;c<NC;c++) if (CELLS[c].group === g.id) mine.push(c);
   const off = new Int32Array(nv+1), idx = [], wts = [], cut = g.sigma*2.6, s2 = 2*g.sigma*g.sigma;
   for (let v=0; v<nv; v++){
     off[v] = idx.length;
     if (!inside[v]) continue;
     const lon = VLON[v], lat = VLAT[v];
     let s = 0; const st = idx.length;
-    for (const c of mine){ const cl = meta.cells[c], dx = (cl.lon - lon)*g.cos, dy = cl.lat - lat;
+    for (const c of mine){ const cl = CELLS[c], dx = (cl.lon - lon)*g.cos, dy = cl.lat - lat;
       if (Math.abs(dx) > cut || Math.abs(dy) > cut) continue;
       const w = Math.exp(-(dx*dx+dy*dy)/s2); if (w < .01) continue; idx.push(c); wts.push(w); s += w; }
-    if (s === 0){ // isolated coastal vertex: take the nearest cell
-      let b = mine[0], bd = 1e9; for (const c of mine){ const cl = meta.cells[c], d = ((cl.lon-lon)*g.cos)**2 + (cl.lat-lat)**2; if (d < bd){ bd = d; b = c; } }
+    if (s === 0){ // isolated vertex: take the nearest cell
+      let b = mine[0], bd = 1e9; for (const c of mine){ const cl = CELLS[c], d = ((cl.lon-lon)*g.cos)**2 + (cl.lat-lat)**2; if (d < bd){ bd = d; b = c; } }
       idx.push(b); wts.push(1); s = 1; }
     for (let k=st;k<idx.length;k++) wts[k] /= s;
   }
@@ -835,7 +881,7 @@ function buildSurface(g){
   for (let v=0; v<nv; v++){ pos[v*3] = gx(g, VLON[v]); pos[v*3+1] = TOP; pos[v*3+2] = gz(g, VLAT[v]); }
   for (let j=0;j<ny-1;j++) for (let i=0;i<nx-1;i++){
     const a = j*nx+i, b = a+1, c = a+nx, d = c+1;
-    // keep triangles on land; coast-only triangles would bridge bays
+    // keep triangles on land; edge-only triangles would bridge bays
     if (inside[a] && inside[b] && inside[c] && (inside[a] === 1 || inside[b] === 1 || inside[c] === 1)) tri.push(a, b, c);
     if (inside[b] && inside[c] && inside[d] && (inside[b] === 1 || inside[c] === 1 || inside[d] === 1)) tri.push(b, d, c);
   }
@@ -843,14 +889,12 @@ function buildSurface(g){
   geom.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
   geom.setAttribute('color', new THREE.BufferAttribute(col, 3).setUsage(THREE.DynamicDrawUsage));
   geom.setIndex(tri);
-  // nearest grid vertex for any lon/lat (for borders, labels, rain)
   const vertAt = (lon, lat) => Math.max(0, Math.min(ny-1, Math.round((lat - la0)/RES)))*nx + Math.max(0, Math.min(nx-1, Math.round((lon - lo0)/RES)));
-  for (const c of mine){ cellG[c] = GROUPS.length; cellV[c] = vertAt(meta.cells[c].lon, meta.cells[c].lat);
-    cellX[c] = gx(g, meta.cells[c].lon); cellZ[c] = gz(g, meta.cells[c].lat); }
+  for (const c of mine){ cellG[c] = GROUPS.length; cellV[c] = vertAt(CELLS[c].lon, CELLS[c].lat); cellX[c] = gx(g, CELLS[c].lon); cellZ[c] = gz(g, CELLS[c].lat); }
   Object.assign(g, {nv, inside, fadeH, fadeC, off, idx: Int32Array.from(idx), wts: Float32Array.from(wts), pos, col, geom, vertAt,
     box: [gx(g, lo0), gx(g, lo1), gz(g, la1), gz(g, la0)]});
   g.mesh = new THREE.Mesh(geom, surfMat); g.mesh.castShadow = true; g.mesh.receiveShadow = true; g.mesh.userData.g = GROUPS.length;
-  GROUPS.push(g); scene.add(g.mesh);
+  GROUPS.push(g); scene.add(g.mesh); viewObjs.push(g.mesh);
 }
 function updateSurfaces(){
   for (const g of GROUPS){
@@ -869,41 +913,206 @@ function updateSurfaces(){
     g.geom.attributes.position.needsUpdate = true; g.geom.attributes.color.needsUpdate = true;
     g.geom.computeVertexNormals();
   }
-  updateBorders();
+  for (const L of [borders, outline]) if (L) drape(L);
 }
 const surfY = (gi, v) => GROUPS[gi].pos[v*3+1];
 
-/* community borders + island outlines, draped on the dunes */
-function buildBorders(){
+/* lines draped on the dunes: inner borders (communities / provinces) and the outline */
+function lineSet(pairs, mat){
   const pts = [], ref = [];
-  const add = (gi, ring) => { const g = GROUPS[gi];
+  for (const [gi, ring] of pairs){ const g = GROUPS[gi];
     for (let k=1;k<ring.length;k++){
       const [x0,y0] = ring[k-1], [x1,y1] = ring[k], n = Math.max(1, Math.ceil(Math.hypot(x1-x0, y1-y0)/(g.res*.8)));
-      for (let s=0;s<n;s++){ const a = s/n, b = (s+1)/n;
-        for (const t of [a, b]){ const lon = x0+(x1-x0)*t, lat = y0+(y1-y0)*t; pts.push(gx(g,lon), 0, gz(g,lat)); ref.push(gi, g.vertAt(lon, lat)); } }
-    } };
-  geo.regions.forEach(r => r.rings.forEach(ring => add(0, ring)));
-  GROUPS.forEach((g, gi) => { if (gi > 0) g.rings.forEach(ring => add(gi, ring)); });
+      for (let s=0;s<n;s++) for (const t of [s/n, (s+1)/n]){ const lon = x0+(x1-x0)*t, lat = y0+(y1-y0)*t; pts.push(gx(g,lon), 0, gz(g,lat)); ref.push(gi, g.vertAt(lon, lat)); }
+    } }
   const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-  borders = new THREE.LineSegments(bg, borderMat); borders.userData.ref = Int32Array.from(ref); borders.frustumCulled = false;
-  scene.add(borders);
+  const L = new THREE.LineSegments(bg, mat); L.userData.ref = Int32Array.from(ref); L.frustumCulled = false;
+  scene.add(L); viewObjs.push(L); return L;
 }
-function updateBorders(){
-  const p = borders.geometry.attributes.position.array, ref = borders.userData.ref;
+function drape(L){
+  const p = L.geometry.attributes.position.array, ref = L.userData.ref;
   for (let i=0, n=p.length/3; i<n; i++) p[i*3+1] = surfY(ref[i*2], ref[i*2+1]) + .012;
-  borders.geometry.attributes.position.needsUpdate = true;
+  L.geometry.attributes.position.needsUpdate = true;
 }
-/* thin frames around the island insets */
 function buildFrames(){
   const pts = [];
-  GROUPS.forEach((g, gi) => { if (!gi) return; const pad = .28, [x0,x1,z0,z1] = g.box;
+  GROUPS.forEach(g => { if (!g.frame) return; const pad = .28, [x0,x1,z0,z1] = g.box;
     const X0 = x0-pad, X1 = x1+pad, Z0 = z0-pad, Z1 = z1+pad, y = .002;
-    pts.push(X0,y,Z0, X1,y,Z0, X1,y,Z0, X1,y,Z1, X1,y,Z1, X0,y,Z1, X0,y,Z1, X0,y,Z0);
-    g.frame = [X0, Z0]; });
+    pts.push(X0,y,Z0, X1,y,Z0, X1,y,Z0, X1,y,Z1, X1,y,Z1, X0,y,Z1, X0,y,Z1, X0,y,Z0); });
+  if (!pts.length) return null;
   const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-  scene.add(new THREE.LineSegments(fg, frameMat));
+  const F = new THREE.LineSegments(fg, frameMat); scene.add(F); viewObjs.push(F); return F;
 }
 
+/* ---------------- datasets ---------------- */
+// DS = the cells of the current view with their daily data, climatology and yearly totals
+let DS, CELLS, YEARLY, NORMALC;
+const detailCache = {};
+function seriesOf(ds){
+  const nat = ds.yearly.map(row => row.reduce((s, v, c) => s + ds.W[c]*v, 0));
+  const normal = ds.normal.reduce((s, v, c) => s + ds.W[c]*v, 0);
+  const ly = G.year.a.length - 1, a = G.year.a[ly], b = G.year.b[ly];
+  let partial = null;
+  if (b - a < 365){ let n = 0; for (let d=a; d<b; d++){ const o = doyIdx[d]*ds.nc; for (let c=0;c<ds.nc;c++) n += ds.W[c]*ds.CL[o+c]/100; }
+    partial = {mm: nat[ly], normal_mm: n}; }
+  return {nat, normal, partial};
+}
+function useDS(ds){
+  DS = ds; NC = ds.nc; D = ds.D; CL = ds.CL; W = ds.W; CELLS = ds.cells; YEARLY = ds.yearly; NORMALC = ds.normal;
+  curH = new Float32Array(NC); tgtH = new Float32Array(NC); curC = new Float32Array(NC*3); tgtC = new Float32Array(NC*3);
+  for (let c=0;c<NC;c++) curC.set(LAND_RGB, c*3);
+  cellG = new Int32Array(NC); cellV = new Int32Array(NC); cellX = new Float32Array(NC); cellZ = new Float32Array(NC);
+  rainCDF = new Float32Array(NC);
+  if (rain){ rain.cell.fill(0); rain.y.fill(-9); rain.active = 0; }
+  if (!ds.series) ds.series = seriesOf(ds);
+}
+function nationDS(){
+  return {kind:'nation', nc: meta.cells.length, cells: meta.cells, D: DAILY_NAT, CL: CLIM_NAT, W: meta.weights, yearly: meta.yearly, normal: meta.normal_cell,
+    series: {nat: meta.national_yearly, normal: meta.stats.normal_mm, partial: meta.stats.partial}};
+}
+async function loadDetail(name){
+  if (detailCache[name]) return detailCache[name];
+  const f = FILES[name]; if (!f) throw new Error(name);
+  const j = await fetch('data/detail/' + f).then(r => r.json());
+  const b64 = s => { const bin = atob(s), out = new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i); return out; };
+  const d = b64(j.daily), c = b64(j.clim);
+  j.D = d; j.CL = new Uint16Array(c.buffer, c.byteOffset, c.byteLength/2); delete j.daily; delete j.clim;
+  return detailCache[name] = j;
+}
+function regionDS(j){
+  const n = j.points.length, cells = j.points.map(p => {
+    const top = p.u.length ? p.u.reduce((a, b) => b[1] > a[1] ? b : a) : null;
+    return {lat: p.lat, lon: p.lon, group: 'detail', size: .25, name: top ? j.units[top[0]].name : null, region: j.name}; });
+  let W = j.points.map(p => p.f*Math.cos(p.lat*Math.PI/180)); const s = W.reduce((a, b) => a + b, 0); W = W.map(w => w/s);
+  // per sub-unit sparse weights, for the list in the side panel
+  const units = j.units.map((u, k) => { const w = []; j.points.forEach((p, c) => { const e = p.u.find(x => x[0] === k); if (e) w.push([c, e[1]*Math.cos(p.lat*Math.PI/180)]); });
+    const t = w.reduce((a, b) => a + b[1], 0); return {name: u.name, w: w.map(([c, x]) => [c, x/t])}; });
+  return {kind:'region', name: j.name, nc: n, cells, D: j.D, CL: j.CL, W, yearly: j.yearly, normal: j.normal, units};
+}
+function unitDS(j, k){
+  const u = j.units[k];
+  let lo0=180, lo1=-180, la0=90, la1=-90; u.rings.forEach(r => r.forEach(([x,y]) => { lo0=Math.min(lo0,x); lo1=Math.max(lo1,x); la0=Math.min(la0,y); la1=Math.max(la1,y); }));
+  // the unit's own points plus close neighbours (they only shape the surface near the edge)
+  const sel = [], w = [];
+  j.points.forEach((p, c) => { const e = p.u.find(x => x[0] === k);
+    if (e || (p.lon > lo0-.3 && p.lon < lo1+.3 && p.lat > la0-.3 && p.lat < la1+.3)){ sel.push(c); w.push(e ? e[1]*Math.cos(p.lat*Math.PI/180) : 0); } });
+  const n = sel.length, s = w.reduce((a, b) => a + b, 0), nc0 = j.points.length;
+  const Dn = new Uint8Array(ND*n), Cn = new Uint16Array(365*n);
+  for (let d=0; d<ND; d++) for (let c=0;c<n;c++) Dn[d*n+c] = j.D[d*nc0 + sel[c]];
+  for (let d=0; d<365; d++) for (let c=0;c<n;c++) Cn[d*n+c] = j.CL[d*nc0 + sel[c]];
+  return {kind:'unit', name: u.name, region: j.name, nc: n, D: Dn, CL: Cn, W: w.map(x => x/s),
+    cells: sel.map(c => ({lat: j.points[c].lat, lon: j.points[c].lon, group: 'detail', size: .25, name: u.name, region: j.name})),
+    yearly: j.yearly.map(row => sel.map(c => row[c])), normal: sel.map(c => j.normal[c])};
+}
+
+/* ---------------- building a view ---------------- */
+function clearView(){
+  for (const o of viewObjs){ scene.remove(o); o.geometry.dispose(); }
+  viewObjs = []; GROUPS = []; borders = outline = frames = null;
+  labelEls.forEach(L => L.e.remove()); labelEls = [];
+}
+function buildView(spec){
+  clearView();
+  let inner = [], outer = [], labels = [];
+  if (spec.kind === 'nation'){
+    useDS(nationDS());
+    nationGroups().forEach(buildSurface);
+    geo.regions.forEach(r => r.rings.forEach(ring => inner.push([0, ring])));
+    GROUPS.forEach((g, gi) => { if (gi) g.rings.forEach(ring => outer.push([gi, ring])); });
+    frames = buildFrames();
+  } else {
+    const j = spec.data;
+    useDS(spec.kind === 'region' ? regionDS(j) : unitDS(j, spec.unit));
+    const rings = spec.kind === 'region' ? j.rings : j.units[spec.unit].rings;
+    buildSurface(fitGroup(rings, 'detail'));
+    rings.forEach(ring => outer.push([0, ring]));
+    if (spec.kind === 'region') j.units.forEach((u, k) => { u.rings.forEach(ring => inner.push([0, ring])); labels.push({text: u.name, lon: u.label[0], lat: u.label[1], unit: k}); });
+  }
+  borders = inner.length ? lineSet(inner, borderMat) : null;
+  outline = outer.length ? lineSet(outer, outlineMat) : null;
+  labelEls = labels.map(L => { const e = document.createElement('button'); e.className = 'lbl'; e.textContent = L.text; e.tabIndex = -1;
+    e.onclick = () => openView({kind:'unit', data: spec.data, unit: L.unit}, null); $('#labels').appendChild(e);
+    return Object.assign(L, {e, vi: GROUPS[0].vertAt(L.lon, L.lat), x: gx(GROUPS[0], L.lon), z: gz(GROUPS[0], L.lat), v: new THREE.Vector3()}); });
+  VIEW = spec;
+  renderCrumbs(); drawBars();
+}
+function placeLabels(){
+  if (!labelEls.length) return;
+  const w = renderer.domElement.clientWidth, h = renderer.domElement.clientHeight;
+  for (const L of labelEls){
+    L.v.set(L.x, surfY(0, L.vi) + .08, L.z).project(camera);
+    const vis = L.v.z < 1 && Math.abs(L.v.x) < 1.05 && Math.abs(L.v.y) < 1.05;
+    L.e.style.display = vis ? '' : 'none';
+    if (vis) L.e.style.transform = `translate(${((L.v.x*.5+.5)*w).toFixed(1)}px, ${((-L.v.y*.5+.5)*h).toFixed(1)}px) translate(-50%,-50%)`;
+  }
+}
+
+/* ---------------- animated transitions ---------------- */
+const tweens = [];
+const tween = (ms, fn, delay=0) => new Promise(res => tweens.push({t0: performance.now() + delay, ms: reduced ? 1 : ms, fn, res}));
+const ease = p => p < .5 ? 4*p*p*p : 1 - Math.pow(-2*p + 2, 3)/2;
+function stepTweens(now){
+  for (let i=tweens.length-1; i>=0; i--){ const T = tweens[i]; if (now < T.t0) continue;
+    const p = Math.min(1, (now - T.t0)/T.ms); T.fn(ease(p), p); if (p >= 1){ tweens.splice(i, 1); T.res(); } }
+}
+const homeDist = () => BASE_DIST * (onResize.f || 1);
+function setFade(a){
+  surfMat.opacity = a; surfMat.transparent = a < 1; surfMat.depthWrite = a > .5;
+  borderMat.opacity = .35*a; outlineMat.opacity = .7*a; frameMat.opacity = .9*a;
+  $('#labels').style.opacity = a;
+}
+let busy = false;
+async function openView(spec, focus){
+  if (busy) return; busy = true; $('#tip').hidden = true; document.body.classList.add('busy');
+  const deeper = spec.kind !== 'nation' && (!VIEW || VIEW.kind === 'nation' || spec.kind === 'unit');
+  const dataP = spec.kind === 'region' && !spec.data ? loadDetail(spec.name).then(j => spec.data = j) : Promise.resolve();
+  // 1 · fly towards the clicked place (or pull back) while the current map fades out
+  const t0 = controls.target.clone(), p0 = camera.position.clone(), dir = p0.clone().sub(t0), d0 = dir.length();
+  const t1 = focus ? focus.clone().setY(0) : t0.clone(), d1 = deeper ? d0*.45 : d0*1.5;
+  dir.normalize();
+  await Promise.all([dataP, tween(750, p => {
+    controls.target.lerpVectors(t0, t1, p);
+    camera.position.copy(controls.target).addScaledVector(dir, d0 + (d1 - d0)*p);
+    setFade(1 - p);
+  })]).catch(e => { toast(t('loadErr', e.message), ''); });
+  if (spec.kind === 'region' && !spec.data){ setFade(1); busy = false; document.body.classList.remove('busy'); return; }
+  // 2 · swap in the new shape: flat, then the outline draws itself and the dunes rise
+  buildView(spec);
+  const hd = homeDist();
+  camera.position.copy(HOME).addScaledVector(HOME_DIR, deeper ? hd*1.35 : hd*.7); controls.target.copy(HOME);
+  refresh(false); state.moving = true;
+  const oc = outline ? outline.geometry.attributes.position.count : 0;
+  if (outline) outline.geometry.setDrawRange(0, 0);
+  surfMat.opacity = 1; surfMat.transparent = false; surfMat.depthWrite = true;
+  borderMat.opacity = 0; outlineMat.opacity = .7; frameMat.opacity = 0; $('#labels').style.opacity = 0;
+  const pStart = camera.position.clone();
+  await Promise.all([
+    tween(1100, p => camera.position.lerpVectors(pStart, HOME.clone().addScaledVector(HOME_DIR, hd), p)),
+    tween(1000, (e, p) => { if (outline) outline.geometry.setDrawRange(0, Math.floor(oc*p/2)*2); }),
+    tween(600, p => { borderMat.opacity = .35*p; frameMat.opacity = .9*p; $('#labels').style.opacity = p; }, 700),
+  ]);
+  if (outline) outline.geometry.setDrawRange(0, Infinity);
+  busy = false; document.body.classList.remove('busy');
+}
+function goUp(){
+  if (!VIEW || VIEW.kind === 'nation' || busy) return;
+  if (VIEW.kind === 'unit') openView({kind:'region', name: VIEW.data.name, data: VIEW.data}, null);
+  else openView({kind:'nation'}, null);
+}
+function renderCrumbs(){
+  const c = $('#crumbs'); if (!c || !VIEW) return;
+  const items = [{label: t('crumbSpain'), go: VIEW.kind !== 'nation' ? () => openView({kind:'nation'}, null) : null}];
+  if (VIEW.kind !== 'nation') items.push({label: regionName(VIEW.data.name), go: VIEW.kind === 'unit' ? () => openView({kind:'region', name: VIEW.data.name, data: VIEW.data}, null) : null});
+  if (VIEW.kind === 'unit') items.push({label: VIEW.data.units[VIEW.unit].name, go: null});
+  c.innerHTML = '';
+  items.forEach((it, k) => { if (k) c.append(Object.assign(document.createElement('span'), {className:'sep', textContent:'›'}));
+    const e = document.createElement(it.go ? 'button' : 'span'); e.textContent = it.label; if (it.go) e.onclick = it.go; else e.className = 'cur'; c.append(e); });
+  const hint = VIEW.kind === 'nation' ? t('clickRegion') : VIEW.kind === 'region' && VIEW.data.units.length ? t(VIEW.data.name === 'Baleares' ? 'clickIsland' : 'clickProv') : '';
+  c.append(Object.assign(document.createElement('span'), {className:'hint', textContent: hint}));
+  $('#c-area').textContent = VIEW.kind === 'nation' ? t('spain') : VIEW.kind === 'region' ? regionName(VIEW.data.name) : VIEW.data.units[VIEW.unit].name;
+}
+
+/* ---------------- scene setup ---------------- */
 function initScene(){
   THREE.ColorManagement.legacyMode = false;
   renderer = new THREE.WebGLRenderer({antialias:true});
@@ -913,11 +1122,11 @@ function initScene(){
   $('#stage').appendChild(renderer.domElement);
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(30, 1, .1, 300);
-  camera.position.set(0.6, 15.6, 16.2);
   controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.target.set(0.6, 0, 2.1); BASE_DIST = camera.position.distanceTo(controls.target);
+  BASE_DIST = 21;
+  controls.target.copy(HOME); camera.position.copy(HOME).addScaledVector(HOME_DIR, BASE_DIST);
   controls.enableDamping = true; controls.dampingFactor = .07; controls.rotateSpeed = .6;
-  controls.minDistance = 6; controls.maxDistance = 34; controls.maxPolarAngle = 1.15; controls.minPolarAngle = .2;
+  controls.minDistance = 4; controls.maxDistance = 34; controls.maxPolarAngle = 1.15; controls.minPolarAngle = .2;
 
   hemi = new THREE.HemisphereLight(0xffffff, 0xcfd6d8, .8); scene.add(hemi);
   dirLight = new THREE.DirectionalLight(0xfff6ea, .85); dirLight.position.set(-9, 6.5, 1);
@@ -931,11 +1140,8 @@ function initScene(){
 
   surfMat = new THREE.MeshStandardMaterial({vertexColors:true, roughness:.92, metalness:0});
   borderMat = new THREE.LineBasicMaterial({transparent:true, opacity:.35});
+  outlineMat = new THREE.LineBasicMaterial({transparent:true, opacity:.7});
   frameMat = new THREE.LineBasicMaterial({transparent:true, opacity:.9});
-  curH = new Float32Array(NC); tgtH = new Float32Array(NC); curC = new Float32Array(NC*3); tgtC = new Float32Array(NC*3);
-  cellG = new Int32Array(NC); cellV = new Int32Array(NC); cellX = new Float32Array(NC); cellZ = new Float32Array(NC);
-  groupDefs().forEach(buildSurface);
-  buildBorders(); buildFrames();
 
   const NR = reduced ? 0 : 420;
   rain = {n: NR, cell: new Int32Array(NR), x: new Float32Array(NR), z: new Float32Array(NR), y: new Float32Array(NR).fill(-9), v: new Float32Array(NR), active: 0};
@@ -945,12 +1151,12 @@ function initScene(){
 
   applyTheme();
   onResize(); addEventListener('resize', onResize);
-  setupHover();
+  setupPointer();
 }
 function applyTheme(){
   buildRamps();
   scene.background = new THREE.Color(css('--bg'));
-  rainMat.color.set(css('--rain')); borderMat.color.set(css('--ink')); frameMat.color.set(css('--line'));
+  rainMat.color.set(css('--rain')); borderMat.color.set(css('--ink')); outlineMat.color.set(css('--ink')); frameMat.color.set(css('--line'));
   const sa = parseFloat(css('--shadow-a')) || .1, dark = sa > .2;
   groundMat.opacity = sa;
   hemi.intensity = dark ? .55 : .8; dirLight.intensity = dark ? .75 : .85; hemi.groundColor.set(dark ? 0x1a2224 : 0xcfd6d8);
@@ -965,31 +1171,63 @@ function onResize(){
   const dock = document.querySelector('.dock'); if (dock) document.documentElement.style.setProperty('--dock-h', dock.offsetHeight + 'px');
 }
 
-function setupHover(){
-  const ray = new THREE.Raycaster(), m = new THREE.Vector2(), tip = $('#tip'), meshes = GROUPS.map(g => g.mesh);
-  let last = -1;
-  const show = ev => {
-    const r = renderer.domElement.getBoundingClientRect();
-    m.set(((ev.clientX - r.left)/r.width)*2-1, -((ev.clientY - r.top)/r.height)*2+1);
-    ray.setFromCamera(m, camera);
-    const hit = ray.intersectObjects(meshes)[0];
-    if (!hit){ tip.hidden = true; last = -1; return; }
-    const gi = hit.object.userData.g; let best = -1, bd = 1e9;
-    for (let c=0;c<NC;c++){ if (cellG[c] !== gi) continue; const dx = cellX[c] - hit.point.x, dz = cellZ[c] - hit.point.z, d = dx*dx + dz*dz; if (d < bd){ bd = d; best = c; } }
-    last = best; tip.hidden = false; fillTip(last);
-    tip.style.left = Math.min(ev.clientX - r.left, r.width - 200) + 'px'; tip.style.top = (ev.clientY - r.top) + 'px';
-  };
-  renderer.domElement.addEventListener('pointermove', e => { if (e.buttons === 0) show(e); });
-  renderer.domElement.addEventListener('pointerleave', () => { tip.hidden = true; last = -1; });
-  renderer.domElement.addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') show(e); });
-  state.tipRefresh = () => { if (last >= 0 && !tip.hidden) fillTip(last); };
+/* ---------------- hover + click ---------------- */
+function pickAt(ev){
+  const r = renderer.domElement.getBoundingClientRect(), m = new THREE.Vector2(((ev.clientX - r.left)/r.width)*2-1, -((ev.clientY - r.top)/r.height)*2+1);
+  const ray = new THREE.Raycaster(); ray.setFromCamera(m, camera);
+  let hit = ray.intersectObjects(GROUPS.map(g => g.mesh))[0];
+  if (!hit && VIEW.kind === 'nation'){
+    // islands are small: anywhere inside an inset frame counts
+    const pt = new THREE.Vector3(); ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), pt);
+    const gi = GROUPS.findIndex(g => g.frame && pt.x > g.box[0]-.28 && pt.x < g.box[1]+.28 && pt.z > g.box[2]-.28 && pt.z < g.box[3]+.28);
+    if (gi >= 0) hit = {point: pt, object: GROUPS[gi].mesh};
+  }
+  if (!hit) return null;
+  const gi = hit.object.userData.g, g = GROUPS[gi], lon = glon(g, hit.point.x), lat = glat(g, hit.point.z);
+  let best = -1, bd = 1e9;
+  for (let c=0;c<NC;c++){ if (cellG[c] !== gi) continue; const dx = cellX[c] - hit.point.x, dz = cellZ[c] - hit.point.z, d = dx*dx + dz*dz; if (d < bd){ bd = d; best = c; } }
+  // what a click would open
+  let target = null, name = null;
+  if (VIEW.kind === 'nation'){
+    name = g.id === 'baleares' ? 'Baleares' : g.id === 'canarias' ? 'Canarias' : (geo.regions.find(R => inRings(R.rings, lon, lat)) || {}).name;
+    if (name) target = {kind:'region', name};
+  } else if (VIEW.kind === 'region'){
+    const k = VIEW.data.units.findIndex(u => inRings(u.rings, lon, lat));
+    if (k >= 0){ name = VIEW.data.units[k].name; target = {kind:'unit', data: VIEW.data, unit: k}; }
+  }
+  return {cell: best, point: hit.point, target, name, x: ev.clientX - r.left, y: ev.clientY - r.top, w: r.width};
 }
-function fillTip(c){
-  const cell = meta.cells[c], r = RVAL[c]/Math.max(RNOR[c], 1e-6);
-  $('#tip').innerHTML = `<b>${regionName(cell.region)}</b>
+function setupPointer(){
+  const tip = $('#tip'), el = renderer.domElement;
+  let last = null, down = null;
+  const show = ev => {
+    if (busy){ tip.hidden = true; return; }
+    const p = pickAt(ev); last = p;
+    el.style.cursor = p && p.target ? 'pointer' : '';
+    if (!p){ tip.hidden = true; return; }
+    tip.hidden = false; fillTip(p);
+    tip.style.left = Math.min(p.x, p.w - 200) + 'px'; tip.style.top = p.y + 'px';
+  };
+  el.addEventListener('pointermove', e => { if (e.buttons === 0) show(e); });
+  el.addEventListener('pointerleave', () => { tip.hidden = true; last = null; });
+  el.addEventListener('pointerdown', e => { down = {x: e.clientX, y: e.clientY, t: performance.now()}; });
+  el.addEventListener('pointerup', e => {
+    const click = down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 6 && performance.now() - down.t < 500; down = null;
+    if (!click || busy) return;
+    const p = pickAt(e);
+    if (p && p.target) openView(p.target, p.point);
+    else if (e.pointerType !== 'mouse') show(e);
+  });
+  state.tipRefresh = () => { if (last && !tip.hidden) fillTip(last); };
+}
+function fillTip(p){
+  const c = p.cell, cell = CELLS[c], r = RVAL[c]/Math.max(RNOR[c], 1e-6);
+  const title = p.name ? (VIEW.kind === 'nation' ? regionName(p.name) : p.name) : (cell.name || regionName(cell.region));
+  $('#tip').innerHTML = `<b>${title}</b>
     <div class="r"><span>${t('tipRain')}</span><span>${fmt(VAL[c], VAL[c] < 10 ? 1 : 0)} mm</span></div>
     <div class="r"><span>${t('tipNormal')}</span><span>${fmt(NOR[c], NOR[c] < 10 ? 1 : 0)} mm</span></div>
-    <div class="r"><span>${t('tipRatio')}${state.g==='day' ? t('tip30') : ''}</span><span>${pct(r*100)}</span></div>`;
+    <div class="r"><span>${t('tipRatio')}${state.g==='day' ? t('tip30') : ''}</span><span>${pct(r*100)}</span></div>` +
+    (p.target ? `<div class="go">${t('tipOpen')}</div>` : '');
 }
 
 /* ---------------- state & UI ---------------- */
@@ -999,7 +1237,7 @@ const hOf = v => HMAX * Math.pow(Math.min(1.25, Math.max(0, v)/VMAX[state.g]), .
 
 function refresh(instant){
   const r = compute(state.g, state.i), out = [0,0,0];
-  let tot = 0; rainCDF = rainCDF || new Float32Array(NC);
+  let tot = 0;
   for (let c=0;c<NC;c++){
     tgtH[c] = hOf(VAL[c]);
     if (state.mode === 'mm') colorMM(VAL[c], state.g, out); else colorRatio(RVAL[c]/Math.max(RNOR[c], 1e-3), out);
@@ -1018,6 +1256,20 @@ function updateCard(r){
   $('#c-mm').innerHTML = `${fmt(r.nat, r.nat < 10 ? 1 : 0)}<u>mm</u>`;
   const cls = r.natRatio < .85 ? 'dry' : r.natRatio > 1.15 ? 'wet' : '';
   $('#c-ratio').innerHTML = `${t('ofNormal', `<b class="${cls}">${pct(r.natRatio*100)}</b>`)} · ${t('normal')} ${fmt(r.natNorm, r.natNorm<10?1:0)} mm`;
+  renderUnits();
+}
+// provinces / islands of the open community, with their rainfall for the current period
+function renderUnits(){
+  const box = $('#c-units');
+  if (!DS || !DS.units || !DS.units.length){ box.hidden = true; return; }
+  const out = [0,0,0], rows = DS.units.map((u, k) => { let v=0, rv=0, rn=0; for (const [c, w] of u.w){ v += w*VAL[c]; rv += w*RVAL[c]; rn += w*RNOR[c]; }
+    return {k, name: u.name, v, r: rv/Math.max(rn, 1e-6)}; }).sort((a, b) => b.r - a.r);
+  box.hidden = false;
+  box.innerHTML = `<div class="lab">${t(VIEW.data.name === 'Baleares' ? 'unitsIsl' : 'unitsProv')}</div>` + rows.map(o =>
+    `<button data-u="${o.k}"><i style="background:${rgbCss(colorRatio(o.r, out))}"></i><span>${o.name}</span><span class="v">${fmt(o.v, o.v < 10 ? 1 : 0)} mm</span><b>${pct(o.r*100)}</b></button>`).join('');
+  box.querySelectorAll('button').forEach(b => b.onclick = () => {
+    const k = +b.dataset.u, L = labelEls.find(l => l.unit === k);
+    openView({kind:'unit', data: VIEW.data, unit: k}, L ? new THREE.Vector3(L.x, 0, L.z) : null); });
 }
 const yearOfPeriod = (g, i) => dateOf(G[g].a[i]).getUTCFullYear();
 function updateTimeline(){
@@ -1030,7 +1282,8 @@ function updateTimeline(){
 }
 function drawBars(){
   const box = $('#bars'); box.innerHTML = '';
-  const nat = meta.national_yearly, max = Math.max(...nat), n = meta.stats.normal_mm, partial = meta.stats.partial, out = [0,0,0];
+  if (!DS) return;
+  const nat = DS.series.nat, max = Math.max(...nat), n = DS.series.normal, partial = DS.series.partial, out = [0,0,0];
   nat.forEach((v, k) => {
     const i = document.createElement('i');
     const ratio = (k === nat.length-1 && partial) ? partial.mm/partial.normal_mm : v/n;
@@ -1095,8 +1348,9 @@ function frame(now){
     updateSurfaces();
     if (md < 1e-3) state.moving = false;
   }
+  stepTweens(now);
   stepRain(dt);
-  controls.update();
+  controls.update(); placeLabels();
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
@@ -1107,8 +1361,10 @@ function stepRain(dt){
   for (let k=0;k<rain.n;k++){
     const o = k*6;
     if (k >= rain.active){ pos.fill(0, o, o+6); rain.y[k] = -9; continue; }
+    if (!GROUPS.length) break;
+    if (rain.cell[k] >= NC) rain.cell[k] = 0;
     if (rain.y[k] < surfY(cellG[rain.cell[k]], cellV[rain.cell[k]])){
-      const c = pickCell(), a = Math.random()*Math.PI*2, rr = Math.random()*.44*meta.cells[c].size*GROUPS[cellG[c]].k; rain.cell[k] = c;
+      const c = pickCell(), a = Math.random()*Math.PI*2, rr = Math.random()*.44*CELLS[c].size*GROUPS[cellG[c]].k; rain.cell[k] = c;
       rain.x[k] = cellX[c] + Math.cos(a)*rr; rain.z[k] = cellZ[c] + Math.sin(a)*rr;
       rain.y[k] = surfY(cellG[c], cellV[c]) + .8 + Math.random()*2.4; rain.v[k] = 2.6 + Math.random()*1.2;
     }
@@ -1201,6 +1457,7 @@ function wire(){
     if (!$('#story').hidden){ if (e.key === 'Escape') closeStory(); if (e.key === 'ArrowRight'){ pauseAuto(); goScene(sIdx+1); } if (e.key === 'ArrowLeft'){ pauseAuto(); goScene(sIdx-1); } return; }
     if (e.target.tagName === 'INPUT') return;
     if (e.key === ' '){ e.preventDefault(); state.playing ? stop() : play(); }
+    if (e.key === 'Escape' || e.key === 'Backspace') goUp();
   });
   $('#scenes').addEventListener('pointerdown', pauseAuto);
   document.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => setLang(b.dataset.lang));
@@ -1212,7 +1469,7 @@ function setLang(l){
   LANG = l; try { localStorage.setItem('lang', l); } catch(e){}
   applyStatic();
   if (!state.ready) return;
-  drawLegend(); drawBars(); buildStory(); calc(); refresh(false);
+  drawLegend(); drawBars(); buildStory(); calc(); renderCrumbs(); refresh(false);
   $('#play').setAttribute('aria-label', t(state.playing ? 'pause' : 'play'));
   if (!$('#story').hidden) $('#s-next').textContent = sIdx === document.querySelectorAll('.scene').length-1 ? t('toMap') : t('fwd');
 }
@@ -1223,7 +1480,8 @@ function setLang(l){
   catch (e){ $('#ptext').textContent = t('loadErr', e.message); return; }
   buildPeriods(); initScene(); wire();
   state.ready = true;
-  drawLegend(); drawBars(); buildStory(); calc();
+  buildView({kind:'nation'});
+  drawLegend(); buildStory(); calc();
   refresh(true);
   const ld = $('#loader'); ld.style.opacity = 0; setTimeout(() => ld.hidden = true, 600);
   requestAnimationFrame(frame);
